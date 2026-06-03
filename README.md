@@ -96,3 +96,9 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
 - Mobile AI diagnostic app
 - Cloud GPU deployment
 - Hospital integration system
+
+## 👨‍💻 Author
+
+- Biswajit Pattanaik
+- B.Tech (ECE) | AI & Embedded Systems Developer
+- Centurion University
