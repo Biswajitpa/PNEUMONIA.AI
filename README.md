@@ -27,16 +27,3 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
     - 📄 Automated Clinical Report Generation
     - 🌐 Web-based Medical Interface
 ## ⚙️ How It Works (Intelligent Pipeline)
-Chest X-Ray Image
-        ↓
-Preprocessing (Resize + Normalize)
-        ↓
-ResNet50 Deep Learning Model
-        ↓
-Pneumonia Prediction (Normal / Pneumonia)
-        ↓
-Grad-CAM Heatmap Generation
-        ↓
-Gemini AI Clinical Report Generator
-        ↓
-Final Output (Prediction + Explanation + Report)
