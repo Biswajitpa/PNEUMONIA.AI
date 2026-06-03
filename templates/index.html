@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-8 animate__animated animate__fadeIn relative">
+    
+    <div id="pipelineLoaderOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-xl z-50 rounded-3xl flex flex-col items-center justify-center opacity-0 pointer-events-none transition-all duration-500 scale-105">
+        <div class="text-center space-y-6 max-w-xs px-4">
+            <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-cyan-500/20 animate-ping"></div>
+                <div class="w-16 h-16 rounded-full border-4 border-t-cyan-400 border-r-cyan-500/40 border-b-slate-800 border-l-slate-800 animate-spin"></div>
+                <span class="absolute text-xl">⚡</span>
+            </div>
+            
+            <div class="space-y-2">
+                <h3 class="text-sm font-extrabold text-slate-100 tracking-widest uppercase font-mono-custom">Executing Pipeline</h3>
+                <p class="text-[10px] text-slate-400 leading-relaxed uppercase font-mono-custom tracking-wider animate__animated animate__pulse animate__infinite">
+                    Parsing ResNet50 vision matrices & compiling generative Gemini narrative abstracts...
+                </p>
+            </div>
+            
+            <div class="pt-2 flex flex-col gap-1.5 text-[9px] font-mono-custom uppercase tracking-wider text-left max-w-[180px] mx-auto">
+                <div class="flex items-center gap-2 text-cyan-400">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span>Ingesting X-Ray Payload</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-500 animate__animated animate__fadeIn animate__delay-1s">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+                    <span>Computing Grad-CAM Map</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-500 animate__animated animate__fadeIn animate__delay-2s">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+                    <span>Building Rx Advisory Note</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainPortalCard" class="w-full max-w-xl bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-8 shadow-2xl shadow-slate-950/50 relative overflow-hidden group transition duration-500">
+        
+        <div class="absolute -top-24 -left-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/15 transition duration-500"></div>
+        <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/15 transition duration-500"></div>
+
+        <form id="intakeFormElement" action="/" method="POST" enctype="multipart/form-data" class="space-y-6 relative z-10" onsubmit="triggerPipelineOverlayAnimation()">
+            
+            <div class="text-center space-y-3">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-xl shadow-cyan-950/40 border border-cyan-400/30 mb-2 relative animate__animated animate__pulse animate__infinite animate__slower">
+                    <span class="text-3xl text-white font-black tracking-tighter select-none font-mono">P𝚽</span>
+                    <div class="absolute -inset-1.5 rounded-2xl border border-cyan-500/20 animate-spin" style="animation-duration: 12s;"></div>
+                </div>
+                
+                <h2 class="text-2xl font-extrabold text-slate-100 tracking-tight uppercase">
+                    PNEUMONIA.<span class="text-cyan-400 font-mono-custom">AI</span> Intake Portal
+                </h2>
+                <p class="text-[11px] text-slate-400 tracking-wide max-w-sm mx-auto uppercase tracking-wider font-mono-custom">
+                    Register clinical subject criteria & upload thoracic radiography metrics
+                </p>
+                <div class="w-16 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-600 mx-auto rounded-full opacity-60"></div>
+            </div>
+
+            <div class="space-y-4 pt-2 text-xs">
+                
+                <div class="space-y-1.5">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono-custom">
+                        👤 Patient  Name
+                    </label>
+                    <input type="text" name="name" required placeholder="e.g. BISWAJIT PATTNAIK" 
+                        class="w-full bg-slate-950/60 text-slate-100 placeholder-slate-600 border border-slate-800/80 focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/30 rounded-xl px-4 py-3.5 outline-none transition font-semibold tracking-wide">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono-custom">
+                            ⏳  Age
+                        </label>
+                        <input type="number" name="age" required placeholder="e.g. 45" min="1" max="120"
+                            class="w-full bg-slate-950/60 text-slate-100 placeholder-slate-600 border border-slate-800/80 focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/30 rounded-xl px-4 py-3.5 outline-none transition font-semibold font-mono-custom">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono-custom">
+                            🧬 Gender
+                        </label>
+                        <div class="relative">
+                            <select name="gender" required
+                                class="w-full bg-slate-950/60 text-slate-100 border border-slate-800/80 focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/30 rounded-xl px-4 py-3.5 outline-none transition font-semibold tracking-wide appearance-none cursor-pointer">
+                                <option value="" disabled selected class="text-slate-600">Select parameter...</option>
+                                <option value="Male" class="bg-slate-950 text-slate-200">Male</option>
+                                <option value="Female" class="bg-slate-950 text-slate-200">Female</option>
+                                <option value="Other" class="bg-slate-950 text-slate-200">Other / Unspecified</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500 text-[10px]">
+                                ▼
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono-custom">
+                        🩻 Thoracic Radiograph Target (Chest X-Ray)
+                    </label>
+                    <label class="flex flex-col items-center justify-center w-full min-h-[140px] bg-slate-950/40 border border-dashed border-slate-800 hover:border-cyan-500/50 rounded-2xl cursor-pointer transition p-4 group/drop text-center relative overflow-hidden">
+                        
+                        <input type="file" name="xray_image" id="fileUploadInput" accept="image/*" required class="hidden" onchange="updateFileInputLabelState()">
+                        
+                        <div id="uploadContentWrapper" class="space-y-2 pointer-events-none transition duration-200">
+                            <div class="text-2xl text-slate-500 group-hover/drop:text-cyan-400 transition transform group-hover/drop:-translate-y-0.5 duration-300">
+                                📥
+                            </div>
+                            <div>
+                                <span class="bg-slate-900 border border-slate-800 text-slate-300 group-hover/drop:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition">
+                                    Browse Files
+                                </span>
+                            </div>
+                            <p class="text-[10px] text-slate-500 group-hover/drop:text-slate-400 transition font-mono-custom pt-1">
+                                DICOM, JPEG, PNG matrices up to 16MB
+                            </p>
+                        </div>
+                        
+                        <div id="fileSelectedBadge" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center gap-2 opacity-0 pointer-events-none transition duration-300 scale-95 rounded-2xl border border-cyan-500/30">
+                            <span class="text-xl">✅</span>
+                            <p id="filenameStringTarget" class="text-xs font-bold text-cyan-400 font-mono-custom px-6 truncate max-w-xs">No file loaded</p>
+                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono-custom hover:text-rose-400 cursor-pointer pointer-events-auto" onclick="clearFileSelectionState(event)">
+                                [ Change File ]
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" 
+                    class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold py-4 rounded-xl transition shadow-xl shadow-cyan-950/20 tracking-widest uppercase text-[10px] transform active:scale-[0.98]">
+                    ⚡ Execute Diagnostic Pipeline →
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateFileInputLabelState() {
+        const input = document.getElementById('fileUploadInput');
+        const badge = document.getElementById('fileSelectedBadge');
+        const textTarget = document.getElementById('filenameStringTarget');
+        
+        if (input.files && input.files[0]) {
+            textTarget.innerText = input.files[0].name;
+            badge.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            badge.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+        }
+    }
+
+    function clearFileSelectionState(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const input = document.getElementById('fileUploadInput');
+        const badge = document.getElementById('fileSelectedBadge');
+        
+        input.value = ""; // Erase uploaded instance string
+        badge.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+        badge.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+    }
+
+    // 🟢 NEW: Smoothly hides form fields and presents the dynamic loader overlay on submission
+    function triggerPipelineOverlayAnimation() {
+        const overlay = document.getElementById('pipelineLoaderOverlay');
+        const mainCard = document.getElementById('mainPortalCard');
+        
+        // Blur the underlying form card and scale it slightly backward
+        mainCard.classList.add('blur-sm', 'scale-95', 'opacity-40');
+        
+        // Fade in the premium cyber scanner overlay element
+        overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-105');
+        overlay.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+    }
+</script>
+{% endblock %}

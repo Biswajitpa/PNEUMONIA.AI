@@ -1,0 +1,11 @@
+storage/
+*.pdf
+Gemini_Generated_Image_jmxvuajmxvuajmxv.png
+*.jpeg
+allfiles.txt
+storage/models/xray_model_best.h5
+storage/models/
+storage/models/
+storage/models/
+*.h5
+.env

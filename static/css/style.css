@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: radial-gradient(circle at top left, #0f172a, #020617, #090d16);
+    background-attachment: fixed;
+}
+
+/* Glassmorphism Card Core Architecture */
+.glass-card {
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    border-color: rgba(56, 189, 248, 0.2);
+    box-shadow: 0 12px 40px 0 rgba(56, 189, 248, 0.05);
+}
+
+/* Custom Text and Utility Highlights */
+.font-mono-custom {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* High-End Soft Glow Badges */
+.glow-alert-pneumonia {
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    text-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+}
+
+.glow-alert-normal {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Smooth Interactive Custom Scrollbars */
+.scrollbar-custom::-webkit-scrollbar {
+    width: 6px;
+}
+.scrollbar-custom::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+.scrollbar-custom::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+}
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: rgba(56, 189, 248, 0.3);
+}
+
+/* Fluid UI Input Overrides */
+input, select {
+    background: rgba(2, 6, 23, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+input:focus, select:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+}
