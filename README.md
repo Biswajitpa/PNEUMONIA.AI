@@ -38,7 +38,8 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
    - Captures fine lung abnormalities
 - Explainable AI (Grad-CAM)
    -To ensure transparency in medical decisions:
-  <img width="261" height="168" alt="image" src="https://github.com/user-attachments/assets/2bae5d2a-11bb-46d3-b635-d3ce37836a0d" />
+<img width="261" height="168" alt="image" src="https://github.com/user-attachments/assets/2bae5d2a-11bb-46d3-b635-d3ce37836a0d" />
+  
 -  Highlights infected lung regions
 -  hows model reasoning visually
 -  uilds clinical trust
