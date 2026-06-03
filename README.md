@@ -68,16 +68,16 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
 - ☁️ Gemini 2.5 Flash API
 - 📄 ReportLab (PDF Generation)
 - 📦 Scikit-learn
-- 📊 Model Evaluation
 
-The system is evaluated using:
-Accuracy
-Precision / Recall
-ROC Curve
-AUC Score
-Interpretation:
-AUC → 1.0 = highly accurate model
-AUC → 0.5 = random prediction
+## 📊 Model Evaluation
+- The system is evaluated using:
+  - Accuracy
+  - Precision / Recall
+  - ROC Curve
+  - AUC Score
+- Interpretation:
+    - AUC → 1.0 = highly accurate model
+    - AUC → 0.5 = random prediction
 -  Highlights infected lung regions
 -  hows model reasoning visually
 -  uilds clinical trust
