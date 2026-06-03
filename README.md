@@ -13,3 +13,16 @@
   <img src="https://img.shields.io/badge/Model-ResNet50-green?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/XAI-GradCAM-orange?style=for-the-badge"/>
 </p>
+
+## 📌 Overview
+PNEUMONIA.AI is an intelligent medical imaging system designed to detect pneumonia from chest X-ray images using deep learning and provide explainable AI outputs for clinical trust.
+Unlike traditional black-box AI models, this system focuses on transparency, interpretability, and clinical usability.It not only predicts pneumonia but also shows where and why the model made that decision using Grad-CAM heatmaps, making it suitable for real-world healthcare environments.
+
+## 🧠Core Idea
+- “AI should not just predict — it should explain.”
+- This system combines:
+- 🧠 Deep Learning (ResNet50 CNN)
+- 🔍 Explainable AI (Grad-CAM)
+- ☁️ Cloud LLM (Gemini 2.5 Flash)
+- 📄 Automated Clinical Report Generation
+- 🌐 Web-based Medical Interface
