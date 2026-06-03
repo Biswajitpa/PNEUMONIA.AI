@@ -82,3 +82,17 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
 -  hows model reasoning visually
 -  uilds clinical trust
 
+## 🏥 Real-World Impact
+- This system can assist:
+   - 🏥 Radiologists
+   - 🧑‍⚕️ Doctors in rural areas
+   - 🚑 Emergency diagnosis systems
+   - 📊 Medical research institutions
+- 👉 It reduces diagnosis time and improves early detection of pneumonia.
+
+## 📈 Future Improvements
+- Multi-disease detection (TB, COVID-19)
+- DICOM medical image support
+- Mobile AI diagnostic app
+- Cloud GPU deployment
+- Hospital integration system
