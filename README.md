@@ -39,7 +39,43 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
 - Explainable AI (Grad-CAM)
    -To ensure transparency in medical decisions:
 <img width="261" height="168" alt="image" src="https://github.com/user-attachments/assets/2bae5d2a-11bb-46d3-b635-d3ce37836a0d" />
-  
+## 🔬 Why This Project Matters
+- Traditional AI medical systems:
+- ❌ Black-box predictions
+- ❌ No explanation
+- ❌ Low clinical trust
+
+## This system:
+
+-  Transparent predictions
+- Visual explanations
+- Clinically interpretable output
+- AI-generated report for doctors
+## 🏗️ System Architecture
+Input Layer: Chest X-ray Image Upload
+AI Layer: ResNet50 Classification Model
+Explainability Layer: Grad-CAM Heatmaps
+LLM Layer: Gemini 2.5 Clinical Report Generator
+Output Layer: Web UI + PDF Report
+🛠️ Tech Stack
+🐍 Python 3.11
+🧠 TensorFlow / Keras
+🔍 OpenCV
+📊 NumPy, Matplotlib
+🌐 Flask (Web App)
+☁️ Gemini 2.5 Flash API
+📄 ReportLab (PDF Generation)
+📦 Scikit-learn
+📊 Model Evaluation
+
+The system is evaluated using:
+Accuracy
+Precision / Recall
+ROC Curve
+AUC Score
+Interpretation:
+AUC → 1.0 = highly accurate model
+AUC → 0.5 = random prediction
 -  Highlights infected lung regions
 -  hows model reasoning visually
 -  uilds clinical trust
