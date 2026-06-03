@@ -20,9 +20,9 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
 
 ## 🧠Core Idea
 - “AI should not just predict — it should explain.”
-- This system combines:
-- 🧠 Deep Learning (ResNet50 CNN)
-- 🔍 Explainable AI (Grad-CAM)
-- ☁️ Cloud LLM (Gemini 2.5 Flash)
-- 📄 Automated Clinical Report Generation
-- 🌐 Web-based Medical Interface
+    - This system combines:
+    - 🧠 Deep Learning (ResNet50 CNN)
+    - 🔍 Explainable AI (Grad-CAM)
+    - ☁️ Cloud LLM (Gemini 2.5 Flash)
+    - 📄 Automated Clinical Report Generation
+    - 🌐 Web-based Medical Interface
