@@ -27,3 +27,5 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
     - 📄 Automated Clinical Report Generation
     - 🌐 Web-based Medical Interface
 ## ⚙️ How It Works (Intelligent Pipeline)
+<img width="350" height="930" alt="diagram-export-6-4-2026-12_20_13-AM" src="https://github.com/user-attachments/assets/a4ef2b60-a575-41ad-941f-9f828c2f1710" />
+
