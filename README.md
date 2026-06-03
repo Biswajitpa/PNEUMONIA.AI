@@ -30,9 +30,16 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
 <img width="350" height="930" alt="diagram-export-6-4-2026-12_20_13-AM" src="https://github.com/user-attachments/assets/a4ef2b60-a575-41ad-941f-9f828c2f1710" />
 
 ## 🧠 AI/ML Intelligence Layer
-- 🔹 Why ResNet50?
-- - Deep networks suffer from vanishing gradients. ResNet solves this using residual learning:
-- H(x)=F(x)+x
-- Enables deeper feature extraction
-- Improves medical image understanding
-- Captures fine lung abnormalities
+- Why ResNet50?
+- Deep networks suffer from vanishing gradients. ResNet solves this using residual learning:
+   - H(x)=F(x)+x
+   - Enables deeper feature extraction
+   - Improves medical image understanding
+   - Captures fine lung abnormalities
+- Explainable AI (Grad-CAM)
+   -To ensure transparency in medical decisions:
+  <img width="261" height="168" alt="image" src="https://github.com/user-attachments/assets/2bae5d2a-11bb-46d3-b635-d3ce37836a0d" />
+-  Highlights infected lung regions
+-  hows model reasoning visually
+-  uilds clinical trust
+
