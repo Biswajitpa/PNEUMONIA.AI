@@ -15,14 +15,6 @@
 
 <br><br>
 
-<img src="https://img.shields.io/github/stars/Biswajitpa/WebScapingRAGCHAT?style=for-the-badge&color=yellow">
-<img src="https://img.shields.io/github/forks/Biswajitpa/WebScapingRAGCHAT?style=for-the-badge&color=blue">
-<img src="https://img.shields.io/github/license/Biswajitpa/WebScapingRAGCHAT?style=for-the-badge&color=green">
-<img src="https://img.shields.io/badge/OpenAI-GPT-red?style=for-the-badge">
-<img src="https://img.shields.io/badge/RAG-AI%20Chatbot-purple?style=for-the-badge">
-<img src="https://img.shields.io/badge/Jupyter-Notebook-F37626?style=for-the-badge&logo=jupyter&logoColor=white">
-
-</div>
 
 ## 📌 Overview
 PNEUMONIA.AI is an intelligent medical imaging system designed to detect pneumonia from chest X-ray images using deep learning and provide explainable AI outputs for clinical trust.
