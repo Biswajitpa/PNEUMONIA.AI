@@ -8,14 +8,6 @@
   <img src="https://readme-typing-svg.demolab.com?lines=AI+Powered+Medical+Diagnosis+System;Explainable+Deep+Learning+for+Healthcare;ResNet50+%2B+Grad-CAM+XAI+Framework"/>
 </p>
 
-![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python)
-![Flask](https://img.shields.io/badge/Flask-WebApp-black?style=for-the-badge&logo=flask)
-![LangChain](https://img.shields.io/badge/LangChain-AI-green?style=for-the-badge)
-![OpenAI](https://img.shields.io/badge/OpenAI-LLM-orange?style=for-the-badge)
-![FAISS](https://img.shields.io/badge/FAISS-VectorDB-red?style=for-the-badge)
-![RAG](https://img.shields.io/badge/RAG-Chatbot-purple?style=for-the-badge)
-![Jupyter Notebook](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=for-the-badge&logo=jupyter)
-
 
 <p align="center">
   <img src="https://img.shields.io/badge/Domain-Medical%20AI-blue?style=for-the-badge"/>
