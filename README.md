@@ -14,7 +14,7 @@
 <img src="https://skillicons.dev/icons?i=python,flask,html,css,javascript,git,github,vscode" />
 
 <br><br>
-
+<</div>
 
 ## 📌 Overview
 PNEUMONIA.AI is an intelligent medical imaging system designed to detect pneumonia from chest X-ray images using deep learning and provide explainable AI outputs for clinical trust.
