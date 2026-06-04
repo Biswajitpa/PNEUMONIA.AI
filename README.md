@@ -7,13 +7,22 @@
 <p align="center">
   <img src="https://readme-typing-svg.demolab.com?lines=AI+Powered+Medical+Diagnosis+System;Explainable+Deep+Learning+for+Healthcare;ResNet50+%2B+Grad-CAM+XAI+Framework"/>
 </p>
+<div align="center">
 
+### 🧠 Intelligent AI Knowledge Retrieval System
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Domain-Medical%20AI-blue?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Model-ResNet50-green?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/XAI-GradCAM-orange?style=for-the-badge"/>
-</p>
+<img src="https://skillicons.dev/icons?i=python,flask,html,css,javascript,git,github,vscode" />
+
+<br><br>
+
+<img src="https://img.shields.io/github/stars/Biswajitpa/WebScapingRAGCHAT?style=for-the-badge&color=yellow">
+<img src="https://img.shields.io/github/forks/Biswajitpa/WebScapingRAGCHAT?style=for-the-badge&color=blue">
+<img src="https://img.shields.io/github/license/Biswajitpa/WebScapingRAGCHAT?style=for-the-badge&color=green">
+<img src="https://img.shields.io/badge/OpenAI-GPT-red?style=for-the-badge">
+<img src="https://img.shields.io/badge/RAG-AI%20Chatbot-purple?style=for-the-badge">
+<img src="https://img.shields.io/badge/Jupyter-Notebook-F37626?style=for-the-badge&logo=jupyter&logoColor=white">
+
+</div>
 
 ## 📌 Overview
 PNEUMONIA.AI is an intelligent medical imaging system designed to detect pneumonia from chest X-ray images using deep learning and provide explainable AI outputs for clinical trust.
