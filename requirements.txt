@@ -1,0 +1,8 @@
+flask
+python-dotenv
+numpy
+opencv-python-headless
+
+tensorflow
+Pillow
+reportlab
