@@ -4,13 +4,7 @@
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f2027,100:0ea5e9&height=200&text=PNEUMONIA.AI&fontColor=ffffff&fontSize=40"/>
 </p>
 
-<p align="center">
-  <img src="https://readme-typing-svg.demolab.com?lines=AI+Powered+Medical+Diagnosis+System;Explainable+Deep+Learning+for+Healthcare;ResNet50+%2B+Grad-CAM+XAI+Framework"/>
-</p>
-<div align="center">
-
 ### 🧠 Intelligent AI Knowledge Retrieval System
-
 <img src="https://skillicons.dev/icons?i=python,flask,html,css,javascript,git,github,vscode" />
 
 <br><br>
