@@ -46,7 +46,13 @@ def load_medical_engines():
 classifier, gemini_engine = load_medical_engines()
 
 # ==========================================
-# 2. UI LAYOUT & USER INPUTS
+# 2. STATE MANAGEMENT (Prevents UI Disappearing)
+# ==========================================
+if "analysis_results" not in st.session_state:
+    st.session_state.analysis_results = None
+
+# ==========================================
+# 3. UI LAYOUT & USER INPUTS
 # ==========================================
 st.title("🧠 PNEUMONIA.AI - Clinical Diagnostic Support")
 st.markdown("Upload a chest X-ray to detect pneumonia and view the explainable heatmap.")
@@ -64,41 +70,55 @@ with col1:
     
     run_analysis = st.button("Run Analysis", type="primary")
 
+    if run_analysis:
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            
+            with st.spinner("Analyzing X-ray scan..."):
+                # Preprocessing
+                img_array = np.array(image.convert('RGB'))
+                img_resized = cv2.resize(img_array, (224, 224))
+                img_tensor = np.expand_dims(img_resized, axis=0)
+
+                # ML Prediction
+                diagnosis, confidence = classifier.predict(img_tensor)
+                
+                # Grad-CAM logic
+                if diagnosis.upper() == "PNEUMONIA":
+                    heatmap = classifier.generate_gradcam(img_tensor)
+                    gradcam_blend = cv2.addWeighted(img_resized, 0.6, heatmap, 0.4, 0)
+                    output_img = Image.fromarray(gradcam_blend)
+                    affected_part = "Consolidation detected in lung tissue"
+                else:
+                    output_img = image
+                    affected_part = "Clear (No consolidation detected)"
+
+                # AI Report Generation
+                patient_info = {"name": name, "age": age, "gender": gender}
+                ai_note = gemini_engine.generate_narrative(patient_info, diagnosis, confidence, affected_part)
+                
+                # Save into persistent state session memory
+                st.session_state.analysis_results = {
+                    "output_img": output_img,
+                    "diagnosis": diagnosis,
+                    "confidence": f"{confidence:.2f}%",
+                    "ai_note": ai_note
+                }
+        else:
+            st.warning("⚠️ Please upload a chest X-ray scan first.")
+
 with col2:
     st.subheader("📊 Diagnostic Output")
     
-    if run_analysis and uploaded_file is not None:
-        image = Image.open(uploaded_file)
+    # Clean render boundary path
+    if st.session_state.analysis_results is not None:
+        results = st.session_state.analysis_results
         
-        with st.spinner("Analyzing X-ray scan..."):
-            # Preprocessing
-            img_array = np.array(image.convert('RGB'))
-            img_resized = cv2.resize(img_array, (224, 224))
-            img_tensor = np.expand_dims(img_resized, axis=0)
-
-            # ML Prediction
-            diagnosis, confidence = classifier.predict(img_tensor)
-            
-            # Grad-CAM logic
-            if diagnosis.upper() == "PNEUMONIA":
-                heatmap = classifier.generate_gradcam(img_tensor)
-                gradcam_blend = cv2.addWeighted(img_resized, 0.6, heatmap, 0.4, 0)
-                output_img = Image.fromarray(gradcam_blend)
-                affected_part = "Consolidation detected in lung tissue"
-            else:
-                output_img = image
-                affected_part = "Clear (No consolidation detected)"
-
-            # AI Report Generation
-            patient_info = {"name": name, "age": age, "gender": gender}
-            ai_note = gemini_engine.generate_narrative(patient_info, diagnosis, confidence, affected_part)
-            
-            # Display Results
-            st.image(output_img, caption="Explainable Heatmap / Scan Matrix", use_column_width=True)
-            st.metric(label="Model Diagnosis", value=str(diagnosis))
-            st.metric(label="Confidence Score", value=f"{confidence:.2f}%")
-            
-            st.text_area("AI Clinical Note", value=ai_note, height=150)
-            
-    elif run_analysis and uploaded_file is None:
-        st.warning("⚠️ Please upload a chest X-ray scan first.")
+        # Render the components continuously even when user tweaks left inputs
+        st.image(results["output_img"], caption="Explainable Heatmap / Scan Matrix", use_container_width=True)
+        st.metric(label="Model Diagnosis", value=str(results["diagnosis"]))
+        st.metric(label="Confidence Score", value=results["confidence"])
+        
+        st.text_area("AI Clinical Note", value=results["ai_note"], height=200)
+    else:
+        st.info("💡 Awaiting input scan analysis parameters. Upload an X-ray and click 'Run Analysis'.")
