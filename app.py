@@ -20,7 +20,9 @@ MODEL_PATH = os.path.join(MODEL_DIR, "xray_model_best.h5")
 
 # Direct download route configuration using your unique File ID
 FILE_ID = "1-XmVDb3ldcpbMd--OX_PkbzBkDgceI0q"
-MODEL_URL = f"https://docs.google.com/uc?export=download&id={FILE_ID}"
+
+# CRITICAL FIX: Appended '&confirm=t' to cleanly bypass Google Drive's >100MB scanning restriction page
+MODEL_URL = f"https://docs.google.com/uc?export=download&id={FILE_ID}&confirm=t"
 
 if not os.path.exists(MODEL_PATH):
     print("🚀 Model weights missing from server storage.")
