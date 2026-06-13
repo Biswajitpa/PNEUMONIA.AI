@@ -1,0 +1,9 @@
+torch
+torchvision
+gradio
+numpy
+opencv-python-headless
+pillow
+matplotlib
+reportlab
+python-dotenv
