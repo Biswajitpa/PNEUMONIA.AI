@@ -7,8 +7,11 @@ from core.classifier import XRayClassifier
 from core.gemini_client import GeminiMedicalClient
 from core.report_generator import PDFReportGenerator
 
-# 1. Initialize Engine (Use environment variables for paths)
-MODEL_PATH = os.getenv("MODEL_PATH", "storage/models/xray_model_best.h5")
+# 1. Initialize Engine (Dynamically generate an absolute path fallback)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_MODEL_PATH = os.path.join(BASE_DIR, "storage", "models", "xray_model_best.h5")
+
+MODEL_PATH = os.getenv("MODEL_PATH", DEFAULT_MODEL_PATH)
 classifier = XRayClassifier(MODEL_PATH)
 gemini_engine = GeminiMedicalClient(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -67,4 +70,12 @@ with gr.Blocks(title="PNEUMONIA.AI") as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch()
+    # CRITICAL FOR DEPLOYMENT: Read the environment port and host values assigned by Render
+    server_port = int(os.environ.get("PORT", 7860))
+    
+    # Force Gradio to expose itself to the public web proxy layer
+    demo.launch(
+        server_name="0.0.0.0", 
+        server_port=server_port,
+        prevent_thread_lock=False
+    )
