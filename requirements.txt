@@ -1,8 +1,9 @@
-flask
-python-dotenv
+torch
+torchvision
+gradio
 numpy
 opencv-python-headless
-
-tensorflow
-Pillow
+pillow
+matplotlib
 reportlab
+python-dotenv
