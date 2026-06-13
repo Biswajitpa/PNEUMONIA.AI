@@ -7,3 +7,4 @@ reportlab
 numpy
 matplotlib
 scikit-learn
+gradio
