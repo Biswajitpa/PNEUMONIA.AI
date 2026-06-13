@@ -1,10 +1,9 @@
-tensorflow==2.16.1
-torch
-torchvision
-gradio
-numpy
+Flask==3.0.3
+gunicorn==22.0.0
+tensorflow-cpu==2.16.1
 opencv-python-headless
-pillow
-matplotlib
+google-generativeai
 reportlab
-python-dotenv
+numpy
+matplotlib
+scikit-learn
