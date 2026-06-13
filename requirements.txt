@@ -1,10 +1,7 @@
-Flask==3.0.3
-gunicorn==22.0.0
-tensorflow-cpu==2.16.1
-opencv-python-headless
-google-generativeai
-reportlab
+streamlit
+requests
 numpy
-matplotlib
-scikit-learn
-gradio
+opencv-python-headless
+Pillow
+tensorflow
+google-generativeai
