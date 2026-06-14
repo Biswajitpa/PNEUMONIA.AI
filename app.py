@@ -961,32 +961,35 @@ else:
                 st.rerun()
             st.stop()
 
+        # ── INFERENCE ───────────────────────────────────────────
         result_label, final_confidence = model.predict(tensor)
         is_pos = (result_label == "PNEUMONIA")
         prob = final_confidence / 100.0 if is_pos else (1.0 - (final_confidence / 100.0))
         confidence = prob if is_pos else (1.0 - prob)
 
-        if is_pos:
-            hm = model.generate_gradcam(tensor)
-            hm_r = cv2.resize(hm, (raw_img.shape[1], raw_img.shape[0]))
+        # ── HELPER FUNCTION TO BYPASS INDENTATION TRAPS ────────
+        def compute_spatial_maps(is_positive, model_obj, img_tensor, original_img):
+            if not is_positive:
+                heatmap_resized = np.zeros((original_img.shape[0], original_img.shape[1], 3), dtype=np.uint8)
+                lbl = "Not applicable (negative screen)"
+                bx, cnt, h_box = (0, 0, 1, 1), (0.5, 0.5), False
+                return heatmap_resized, lbl, bx, cnt, h_box
             
-            if len(hm_r.shape) == 3:
-                hm_gray = cv2.cvtColor(hm_r, cv2.COLOR_BGR2GRAY)
-            else:
-                hm_gray = hm_r
-                
-            region = focus_region_label(hm_gray)
-            box, cent, has = focus_box(hm_gray)
-        else:
-            hm_r = np.zeros((raw_img.shape[0], raw_img.shape[1], 3), dtype=np.uint8)
-            region = "Not applicable (negative screen)"
-            box, cent, has = (0, 0, 1, 1), (0.5, 0.5), False
+            heatmap_raw = model_obj.generate_gradcam(img_tensor)
+            heatmap_resized = cv2.resize(heatmap_raw, (original_img.shape[1], original_img.shape[0]))
+            hm_gray = cv2.cvtColor(heatmap_resized, cv2.COLOR_BGR2GRAY) if len(heatmap_resized.shape) == 3 else heatmap_resized
+            lbl = focus_region_label(hm_gray)
+            bx, cnt, h_box = focus_box(hm_gray)
+            return heatmap_resized, lbl, bx, cnt, h_box
 
+        # Run the isolated function safely
+        hm_r, region, box, cent, has = compute_spatial_maps(is_pos, model, tensor, raw_img)
+
+        # ── OUTPUT GRAPHICS ROUTING ─────────────────────────────
         overlay_m = build_overlay(raw_img, hm_r, is_pos)
         if is_pos:
             overlay_m = draw_marker(overlay_m, box, cent, has)
         loc_fig = location_map_fig(box, cent, has, region)
-            # Since your fallback gradcam generates a 3-channel BGR image, 
             # we squash it to a single channel for the region labeling logic
             if len(hm_r.shape) == 3:
                 hm_gray = cv2.cvtColor(hm_r, cv2.COLOR_BGR2GRAY)
