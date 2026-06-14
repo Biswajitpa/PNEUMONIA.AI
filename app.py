@@ -990,40 +990,25 @@ else:
         if is_pos:
             overlay_m = draw_marker(overlay_m, box, cent, has)
         loc_fig = location_map_fig(box, cent, has, region)
-            # we squash it to a single channel for the region labeling logic
-            if len(hm_r.shape) == 3:
-                hm_gray = cv2.cvtColor(hm_r, cv2.COLOR_BGR2GRAY)
-            else:
-                hm_gray = hm_r
-                
-            region = focus_region_label(hm_gray)
-            box, cent, has = focus_box(hm_gray)
-        else:
-            hm_r = np.zeros((raw_img.shape[0], raw_img.shape[1], 3), dtype=np.uint8)
-            region = "Not applicable (negative screen)"
-            box, cent, has = (0, 0, 1, 1), (0.5, 0.5), False
 
-        overlay_m = build_overlay(raw_img, hm_r, is_pos)
-        if is_pos:
-            overlay_m = draw_marker(overlay_m, box, cent, has)
-        loc_fig = location_map_fig(box, cent, has, region)
-        
-
-        ptype=st.session_state.p_type
-        pside=st.session_state.p_side
-        plocation=st.session_state.get("p_location","Not specified")
+        # ── STATE MANAGEMENT & IMAGE DATA EXTRACTION ────────────
+        ptype = st.session_state.p_type
+        pside = st.session_state.p_side
+        plocation = st.session_state.get("p_location", "Not specified")
 
         def _b64(arr_bgr):
-            ok,buf_enc=cv2.imencode(".png",arr_bgr)
+            ok, buf_enc = cv2.imencode(".png", arr_bgr)
             return base64.b64encode(buf_enc.tobytes()).decode("ascii")
-        def _b64_fig(fig):
-            b=io.BytesIO()
-            fig.savefig(b,format="png",dpi=150,facecolor=fig.get_facecolor(),bbox_inches="tight")
-            b.seek(0); return base64.b64encode(b.read()).decode("ascii")
 
-        raw_b64=_b64(raw_img)
-        ov_b64=_b64(overlay_m)
-        loc_b64=_b64_fig(loc_fig)
+        def _b64_fig(fig):
+            b = io.BytesIO()
+            fig.savefig(b, format="png", dpi=150, facecolor=fig.get_facecolor(), bbox_inches="tight")
+            b.seek(0)
+            return base64.b64encode(b.read()).decode("ascii")
+
+        raw_b64 = _b64(raw_img)
+        ov_b64 = _b64(overlay_m)
+        loc_b64 = _b64_fig(loc_fig)
 
         st.markdown(f"""
 <div class="shead">
