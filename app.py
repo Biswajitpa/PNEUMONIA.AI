@@ -30,7 +30,6 @@ from reportlab.lib.units import mm
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 import requests as _requests
-
 # ============================================================
 # AUTOMATIC ONNX MODEL WEIGHTS RUNTIME DOWNLOADER
 # ============================================================
@@ -38,20 +37,17 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "storage", "models")
 MODEL_PATH = os.path.join(MODEL_DIR, "xray_model_best.onnx")
 
-# 1. Ensure directory path exists
+# Create the folder structure automatically inside the cloud container if missing
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-# 🚨 FORCE CLEANUP: If the file exists but is tiny (corrupted HTML), delete it!
-if os.path.exists(MODEL_PATH) and os.path.getsize(MODEL_PATH) < 1000000:  # Less than 1MB means it's just text, not a real model
-    os.remove(MODEL_PATH)
-
-# 2. Trigger the real binary streaming process
 if not os.path.exists(MODEL_PATH):
     with st.spinner("📥 Synchronizing optimized ONNX model weights from cloud storage... please wait."):
+        # Pulls directly from your shared Google Drive file link
         FILE_ID = "1-XmVDb3ldcpbMd--OX_PkbzBkDgceI0q"
         MODEL_URL = "https://docs.google.com/uc?export=download"
 
         try:
+            # First request to check for a large file confirmation token
             session = _requests.Session()
             response = session.get(MODEL_URL, params={"id": FILE_ID}, stream=True)
 
@@ -61,13 +57,16 @@ if not os.path.exists(MODEL_PATH):
                     token = value
                     break
 
+            # If a token is found, send a secondary request confirming the download
             if token:
-                response = session.get(MODEL_URL, params={"id": FILE_ID, "confirm": token}, stream=True)
+                params = {"id": FILE_ID, "confirm": token}
+                response = session.get(MODEL_URL, params=params, stream=True)
 
             response.raise_for_status()
 
+            # Stream the true binary data to disk
             with open(MODEL_PATH, "wb") as f:
-                for chunk in response.iter_content(chunk_size=32768):
+                for chunk in response.iter_content(chunk_size=32768):  # Increased chunk size for faster disk writes
                     if chunk:
                         f.write(chunk)
 
@@ -342,6 +341,9 @@ for k, v in [("chat_history", []), ("diagnostic_context", None), ("pipeline_acti
 # ============================================================
 # MODEL LOADING
 # ============================================================
+# ============================================================
+# MODEL LOADING
+# ============================================================
 @st.cache_resource
 def load_model_cached():
     paths = []
@@ -358,7 +360,6 @@ def load_model_cached():
             from core.classifier import XRayClassifier
             return XRayClassifier(p)
     return None
-
 # ============================================================
 # GRAD-CAM
 # ============================================================
@@ -1017,7 +1018,7 @@ else:
                 lbl = "Not applicable (negative screen)"
                 bx, cnt, h_box = (0, 0, 1, 1), (0.5, 0.5), False
                 return heatmap_resized, lbl, bx, cnt, h_box
-
+            
             heatmap_raw = model_obj.generate_gradcam(img_tensor)
             heatmap_resized = cv2.resize(heatmap_raw, (original_img.shape[1], original_img.shape[0]))
             hm_gray = cv2.cvtColor(heatmap_resized, cv2.COLOR_BGR2GRAY) if len(heatmap_resized.shape) == 3 else heatmap_resized
