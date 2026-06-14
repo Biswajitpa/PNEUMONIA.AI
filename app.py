@@ -857,10 +857,10 @@ if not st.session_state.pipeline_active:
     Research Demo &mdash; Complete all fields before running pipeline</div>
 </div>""", unsafe_allow_html=True)
 
-                st.markdown('<div class="disc">&#9888; NOT A MEDICAL DEVICE. NOT FOR CLINICAL USE.</div>', unsafe_allow_html=True)
+                st.markdown("""<div style="text-align: center; color: #4ECDC4; font-size: 1.5rem; font-weight: bold; padding: 10px;">🫁 Welcome to Pneumonia AI</div>""", unsafe_allow_html=True)
 
                 st.markdown('<div class="flabel-g">Patient Name</div>', unsafe_allow_html=True)
-                p_name=st.text_input("name_",value="Subject 001",label_visibility="collapsed")
+                p_name=st.text_input("name_",value="Patient Name",label_visibility="collapsed")
                 c1,c2=st.columns(2)
                 with c1:
                     st.markdown('<div class="flabel-g">Age</div>', unsafe_allow_html=True)
