@@ -297,22 +297,25 @@ for k, v in [("chat_history", []), ("diagnostic_context", None), ("pipeline_acti
 # ============================================================
 # MODEL LOADING
 # ============================================================
+# ============================================================
+# MODEL LOADING
+# ============================================================
 @st.cache_resource
 def load_model_cached():
     paths = []
     ep = os.getenv("MODEL_PATH")
     if ep: paths.append(ep)
     paths += [
-        os.path.join("storage","models","xray_model_best.h5"),
-        os.path.join("storages","models","xray_model_best.h5"),
-        os.path.join("models","xray_model_best.h5"),
-        "xray_model_best.h5",
+        os.path.join("storage", "models", "xray_model_best.onnx"),
+        os.path.join("models", "xray_model_best.onnx"),
+        "xray_model_best.onnx",
     ]
     for p in paths:
         if os.path.exists(p):
-            return load_model(p)
+            # Forcing it to load using your updated ONNX classifier class
+            from core.classifier import XRayClassifier
+            return XRayClassifier(p)
     return None
-
 # ============================================================
 # GRAD-CAM
 # ============================================================
@@ -950,25 +953,34 @@ else:
     resized=cv2.resize(raw_img,(224,224))
     norm=resized.astype("float32")/255.0
     tensor=np.expand_dims(norm,0)
-
-    if model is None:
-        st.error("Model not found. Place model at 'storage/models/xray_model_best.h5' and restart.")
+if model is None:
+        st.error("Model not found. Place model at 'storage/models/xray_model_best.onnx' and restart.")
         if st.button("Return to Portal"):
             st.session_state.pipeline_active=False; st.rerun()
     else:
-        prob=float(model.predict(tensor)[0][0])
-        is_pos=prob>0.5
-
+        # Running prediction using the lightweight ONNX framework setup
+        result_label, final_confidence = model.predict(tensor)
+        is_pos = (result_label == "PNEUMONIA")
+        prob = final_confidence / 100.0 if is_pos else (1.0 - (final_confidence / 100.0))
+        
         # FIX: confidence = how sure model is in its stated conclusion
         confidence = prob if is_pos else (1 - prob)
-
-        if is_pos:
-            hm = gradcam(tensor, model)
+if is_pos:
+            # 🟢 UPDATED: Using the ONNX classifier's internal fallback engine
+            hm = model.generate_gradcam(tensor)
             hm_r = cv2.resize(hm, (raw_img.shape[1], raw_img.shape[0]))
-            region = focus_region_label(hm_r)
-            box, cent, has = focus_box(hm_r)
+            
+            # Since your fallback gradcam generates a 3-channel BGR image, 
+            # we squash it to a single channel for the region labeling logic
+            if len(hm_r.shape) == 3:
+                hm_gray = cv2.cvtColor(hm_r, cv2.COLOR_BGR2GRAY)
+            else:
+                hm_gray = hm_r
+                
+            region = focus_region_label(hm_gray)
+            box, cent, has = focus_box(hm_gray)
         else:
-            hm_r = np.zeros((raw_img.shape[0], raw_img.shape[1]), dtype=np.float32)
+            hm_r = np.zeros((raw_img.shape[0], raw_img.shape[1], 3), dtype=np.uint8)
             region = "Not applicable (negative screen)"
             box, cent, has = (0, 0, 1, 1), (0.5, 0.5), False
 
@@ -976,6 +988,7 @@ else:
         if is_pos:
             overlay_m = draw_marker(overlay_m, box, cent, has)
         loc_fig = location_map_fig(box, cent, has, region)
+        
 
         ptype=st.session_state.p_type
         pside=st.session_state.p_side
