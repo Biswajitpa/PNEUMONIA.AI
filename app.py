@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from datetime import datetime
 from dotenv import load_dotenv
-from tensorflow.keras.models import load_model
+
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
