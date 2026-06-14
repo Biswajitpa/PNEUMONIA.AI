@@ -44,16 +44,32 @@ if not os.path.exists(MODEL_PATH):
     with st.spinner("📥 Synchronizing optimized ONNX model weights from cloud storage... please wait."):
         # Pulls directly from your shared Google Drive file link
         FILE_ID = "1-XmVDb3ldcpbMd--OX_PkbzBkDgceI0q"
-        MODEL_URL = f"https://docs.google.com/uc?export=download&id={FILE_ID}"
-        
+        MODEL_URL = "https://docs.google.com/uc?export=download"
+
         try:
-            # Note: Using your imported _requests alias safely
-            response = _requests.get(MODEL_URL, stream=True)
+            # First request to check for a large file confirmation token
+            session = _requests.Session()
+            response = session.get(MODEL_URL, params={"id": FILE_ID}, stream=True)
+
+            token = None
+            for key, value in response.cookies.items():
+                if "download_warning" in key:
+                    token = value
+                    break
+
+            # If a token is found, send a secondary request confirming the download
+            if token:
+                params = {"id": FILE_ID, "confirm": token}
+                response = session.get(MODEL_URL, params=params, stream=True)
+
             response.raise_for_status()
+
+            # Stream the true binary data to disk
             with open(MODEL_PATH, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
+                for chunk in response.iter_content(chunk_size=32768):  # Increased chunk size for faster disk writes
                     if chunk:
                         f.write(chunk)
+
             st.success("✅ Model weights completely synchronized successfully!")
             st.rerun()
         except Exception as e:
