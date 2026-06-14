@@ -986,7 +986,6 @@ else:
         if is_pos:
             overlay_m = draw_marker(overlay_m, box, cent, has)
         loc_fig = location_map_fig(box, cent, has, region)
-            
             # Since your fallback gradcam generates a 3-channel BGR image, 
             # we squash it to a single channel for the region labeling logic
             if len(hm_r.shape) == 3:
