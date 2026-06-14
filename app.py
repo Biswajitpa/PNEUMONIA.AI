@@ -951,8 +951,8 @@ else:
     fb=np.asarray(bytearray(st.session_state.uploaded_bytes),dtype=np.uint8)
     raw_img=cv2.imdecode(fb,cv2.IMREAD_COLOR)
     resized=cv2.resize(raw_img,(224,224))
-    norm=resized.astype("float32")/255.0
-  tensor=np.expand_dims(norm,0)
+    norm = resized.astype("float32") / 255.0
+        tensor = np.expand_dims(norm, 0)
         
         if model is None:
             st.error("Model not found. Place model at 'storage/models/xray_model_best.onnx' and restart.")
