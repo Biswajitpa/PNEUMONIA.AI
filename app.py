@@ -958,11 +958,9 @@ if model is None:
         if st.button("Return to Portal"):
             st.session_state.pipeline_active=False; st.rerun()
     else:
-        # Running prediction using the lightweight ONNX framework setup
         result_label, final_confidence = model.predict(tensor)
         is_pos = (result_label == "PNEUMONIA")
         prob = final_confidence / 100.0 if is_pos else (1.0 - (final_confidence / 100.0))
-        
         # FIX: confidence = how sure model is in its stated conclusion
         confidence = prob if is_pos else (1 - prob)
 if is_pos:
