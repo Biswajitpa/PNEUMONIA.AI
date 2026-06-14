@@ -986,10 +986,6 @@ else:
         if is_pos:
             overlay_m = draw_marker(overlay_m, box, cent, has)
         loc_fig = location_map_fig(box, cent, has, region)
-    
-            # 🟢 UPDATED: Using the ONNX classifier's internal fallback engine
-            hm = model.generate_gradcam(tensor)
-            hm_r = cv2.resize(hm, (raw_img.shape[1], raw_img.shape[0]))
             
             # Since your fallback gradcam generates a 3-channel BGR image, 
             # we squash it to a single channel for the region labeling logic
