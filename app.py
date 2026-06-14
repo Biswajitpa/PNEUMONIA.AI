@@ -948,46 +948,44 @@ if not st.session_state.pipeline_active:
 # RESULTS DASHBOARD
 # ============================================================
 else:
-    fb = np.asarray(bytearray(st.session_state.uploaded_bytes), dtype=np.uint8)
-    raw_img = cv2.imdecode(fb, cv2.IMREAD_COLOR)
-    resized = cv2.resize(raw_img, (224, 224))
-    norm = resized.astype("float32") / 255.0
-    tensor = np.expand_dims(norm, 0)
+        fb = np.asarray(bytearray(st.session_state.uploaded_bytes), dtype=np.uint8)
+        raw_img = cv2.imdecode(fb, cv2.IMREAD_COLOR)
+        resized = cv2.resize(raw_img, (224, 224))
+        norm = resized.astype("float32") / 255.0
+        tensor = np.expand_dims(norm, 0)
 
-    if model is None:
-        st.error("Model not found. Place model at 'storage/models/xray_model_best.onnx' and restart.")
-        if st.button("Return to Portal"):
-            st.session_state.pipeline_active = False
-            st.rerun()
-        st.stop()
+        if model is None:
+            st.error("Model not found. Place model at 'storage/models/xray_model_best.onnx' and restart.")
+            if st.button("Return to Portal"):
+                st.session_state.pipeline_active = False
+                st.rerun()
+            st.stop()
 
-    # ── ONNX INFERENCE PIPELINE ─────────────────────────────────
-    result_label, final_confidence = model.predict(tensor)
-    is_pos = (result_label == "PNEUMONIA")
-    prob = final_confidence / 100.0 if is_pos else (1.0 - (final_confidence / 100.0))
-    confidence = prob if is_pos else (1.0 - prob)
+        result_label, final_confidence = model.predict(tensor)
+        is_pos = (result_label == "PNEUMONIA")
+        prob = final_confidence / 100.0 if is_pos else (1.0 - (final_confidence / 100.0))
+        confidence = prob if is_pos else (1.0 - prob)
 
-    # ── GRAD-CAM VISUALIZATION MAP ──────────────────────────────
-    if is_pos:
-        hm = model.generate_gradcam(tensor)
-        hm_r = cv2.resize(hm, (raw_img.shape[1], raw_img.shape[0]))
-        
-        if len(hm_r.shape) == 3:
-            hm_gray = cv2.cvtColor(hm_r, cv2.COLOR_BGR2GRAY)
-        else:
-            hm_gray = hm_r
+        if is_pos:
+            hm = model.generate_gradcam(tensor)
+            hm_r = cv2.resize(hm, (raw_img.shape[1], raw_img.shape[0]))
             
-        region = focus_region_label(hm_gray)
-        box, cent, has = focus_box(hm_gray)
-    else:
-        hm_r = np.zeros((raw_img.shape[0], raw_img.shape[1], 3), dtype=np.uint8)
-        region = "Not applicable (negative screen)"
-        box, cent, has = (0, 0, 1, 1), (0.5, 0.5), False
+            if len(hm_r.shape) == 3:
+                hm_gray = cv2.cvtColor(hm_r, cv2.COLOR_BGR2GRAY)
+            else:
+                hm_gray = hm_r
+                
+            region = focus_region_label(hm_gray)
+            box, cent, has = focus_box(hm_gray)
+        else:
+            hm_r = np.zeros((raw_img.shape[0], raw_img.shape[1], 3), dtype=np.uint8)
+            region = "Not applicable (negative screen)"
+            box, cent, has = (0, 0, 1, 1), (0.5, 0.5), False
 
-    overlay_m = build_overlay(raw_img, hm_r, is_pos)
-    if is_pos:
-        overlay_m = draw_marker(overlay_m, box, cent, has)
-    loc_fig = location_map_fig(box, cent, has, region)
+        overlay_m = build_overlay(raw_img, hm_r, is_pos)
+        if is_pos:
+            overlay_m = draw_marker(overlay_m, box, cent, has)
+        loc_fig = location_map_fig(box, cent, has, region)
     
             # 🟢 UPDATED: Using the ONNX classifier's internal fallback engine
             hm = model.generate_gradcam(tensor)
