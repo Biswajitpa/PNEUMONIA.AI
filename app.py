@@ -947,22 +947,22 @@ if not st.session_state.pipeline_active:
 # ============================================================
 # RESULTS DASHBOARD
 # ============================================================
-else:
-    fb=np.asarray(bytearray(st.session_state.uploaded_bytes),dtype=np.uint8)
-    raw_img=cv2.imdecode(fb,cv2.IMREAD_COLOR)
-    resized=cv2.resize(raw_img,(224,224))
+fb = np.asarray(bytearray(st.session_state.uploaded_bytes), dtype=np.uint8)
+    raw_img = cv2.imdecode(fb, cv2.IMREAD_COLOR)
+    resized = cv2.resize(raw_img, (224, 224))
     norm = resized.astype("float32") / 255.0
-        tensor = np.expand_dims(norm, 0)
-        
-        if model is None:
-            st.error("Model not found. Place model at 'storage/models/xray_model_best.onnx' and restart.")
-            if st.button("Return to Portal"):
-                st.session_state.pipeline_active = False
-                st.rerun()
-            st.stop()
+    tensor = np.expand_dims(norm, 0)
 
-        result_label, final_confidence = model.predict(tensor)
-        is_pos = (result_label == "PNEUMONIA")
+    if model is None:
+        st.error("Model not found. Place model at 'storage/models/xray_model_best.onnx' and restart.")
+        if st.button("Return to Portal"):
+            st.session_state.pipeline_active = False
+            st.rerun()
+        st.stop()
+
+    result_label, final_confidence = model.predict(tensor)
+    is_pos = (result_label == "PNEUMONIA")
+    prob = final_confidence / 100.0 if is_pos else (1.0 - (final_confidence / 100.0))
         # FIX: confidence = how sure model is in its stated conclusion
         confidence = prob if is_pos else (1 - prob)
 if is_pos:
