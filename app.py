@@ -145,7 +145,6 @@ div[data-testid="stDownloadButton"]>button:hover{transform:translateY(-2px);}
 .pf-norm{background:linear-gradient(90deg,#2dd4bf,#059669);box-shadow:0 0 14px rgba(45,212,191,.45);}
 .pval{width:52px;text-align:right;font-family:sans-serif;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;}
 
-/* ── XRAY VIEWER PANELS ── */
 .xray-panel-wrap{
     background:#0a1628;
     border-radius:14px;
@@ -362,21 +361,9 @@ _LUT = red_hot_lut()
 # ============================================================
 # BUILD OVERLAY
 # ============================================================
-# FIX: previously, when the Grad-CAM heatmap had ~zero gradient signal
-# (which happens very often for NEGATIVE / NORMAL predictions, since the
-# loss `pred[:,0]` is near zero and produces almost-zero gradients), the
-# function fell back to drawing a FAKE centred Gaussian "hotspot" — this
-# is what produced the misleading red/orange/white blob on NORMAL results.
-#
-# Now: if the classifier result is NEGATIVE (is_pos=False), we never draw
-# any heatmap at all — we just return the plain radiograph. The fake
-# fallback hotspot is only used as an absolute last resort for POSITIVE
-# cases where gradients genuinely vanish.
 def build_overlay(raw, hm_r, is_pos=True):
     if not is_pos:
-        # NORMAL result -> show clean radiograph, no heatmap/markers
         return np.clip(raw.astype(np.float32), 0, 255).astype(np.uint8)
-
     hm = np.nan_to_num(hm_r, nan=0.0, posinf=1.0, neginf=0.0)
     hm = np.clip(hm, 0, 1)
     hm_max = float(hm.max())
@@ -403,9 +390,6 @@ def build_overlay(raw, hm_r, is_pos=True):
 # ============================================================
 # LOCATION / FOCUS
 # ============================================================
-# FIX: For NEGATIVE results we no longer compute a fake focus box/marker —
-# focus_region_label / focus_box / draw_marker are only called for POSITIVE
-# results now (see results dashboard section below).
 def focus_region_label(hm):
     h,w=hm.shape; total=hm.sum()
     if total<=0: return "Diffuse / No Dominant Region"
@@ -466,7 +450,9 @@ def location_map_fig(box,cent,has,label):
 # ANIMATED DONUT
 # ============================================================
 def animated_donut(score, is_pos, height=210, key="dnt"):
-    pct = round(max(0.0,min(100.0,score*100)),1)
+    # FIX: show confidence in the ACTUAL result, not always pneumonia prob
+    confidence = score if is_pos else (1.0 - score)
+    pct = round(max(0.0, min(100.0, confidence * 100)), 1)
     fill = "#ef4444" if is_pos else "#2dd4bf"
     status = "POSITIVE" if is_pos else "NEGATIVE"
     html = f"""
@@ -474,7 +460,7 @@ def animated_donut(score, is_pos, height=210, key="dnt"):
             height:{height}px;background:transparent;font-family:sans-serif;">
   <canvas id="{key}" width="170" height="170" style="max-width:100%;"></canvas>
   <div id="{key}_lbl" style="font-size:13px;font-weight:800;color:#fff;margin-top:8px;letter-spacing:.5px;">
-    {status} — 0.0%
+    {status} &mdash; 0.0%
   </div>
 </div>
 <script>
@@ -498,7 +484,7 @@ def animated_donut(score, is_pos, height=210, key="dnt"):
     ctx.fillText(v.toFixed(1)+"%",cx,cy-6);
     ctx.fillStyle="#5eead4";ctx.font="10px monospace";
     ctx.fillText("CONFIDENCE",cx,cy+16);
-    if(lblEl)lblEl.textContent=label+" — "+v.toFixed(1)+"%";
+    if(lblEl)lblEl.textContent=label+" \u2014 "+v.toFixed(1)+"%";
   }}
   draw(0);
   var step=Math.max(target/40,0.5);
@@ -516,22 +502,20 @@ def animated_donut(score, is_pos, height=210, key="dnt"):
 # ============================================================
 _TYPE_CHIP={"Bacterial":"chip-bact","Viral":"chip-virl","Fungal":"chip-fung","Unknown":"chip-unkn"}
 _SIDE_CHIP={"Left Lung":"chip-left","Right Lung":"chip-right","Bilateral":"chip-bil","Unknown":"chip-unkn"}
-def type_chip(t): return f'<span class="type-chip {_TYPE_CHIP.get(t,"chip-unkn")}">⚕ {t}</span>'
+def type_chip(t): return f'<span class="type-chip {_TYPE_CHIP.get(t,"chip-unkn")}">&#9877; {t}</span>'
 def side_chip(s):
-    ic={"Left Lung":"◀","Right Lung":"▶","Bilateral":"◀▶","Unknown":"?"}
+    ic={"Left Lung":"&#9664;","Right Lung":"&#9654;","Bilateral":"&#9664;&#9654;","Unknown":"?"}
     return f'<span class="type-chip {_SIDE_CHIP.get(s,"chip-unkn")}">{ic.get(s,"")} {s}</span>'
 
 # ============================================================
-# GROQ AI  (replaces Gemini — uses llama3-8b-8192, free tier)
+# GROQ AI
 # ============================================================
 _GROQ_MODEL = "llama-3.3-70b-versatile"
 
 def _groq_call(prompt: str) -> str:
-    """Call Groq REST API with GROQ_API_KEY from .env"""
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     if not api_key:
         return "AI features not enabled — set GROQ_API_KEY in your .env file."
-
     url = "https://api.groq.com/openai/v1/chat/completions"
     payload = {
         "model": _GROQ_MODEL,
@@ -559,11 +543,8 @@ def _groq_call(prompt: str) -> str:
 
 
 def groq_summary(patient, prob, focus, ptype, side, is_pos):
-    # FIX: pass is_pos explicitly and tailor the prompt/wording so the AI
-    # summary cannot describe a "focus region" for NEGATIVE results
-    # (previously the prompt always referenced a Grad-CAM focus region,
-    # even when none was actually drawn for negative cases).
     label = "positive (pneumonia suspected)" if is_pos else "negative (no pneumonia detected)"
+    confidence = prob if is_pos else (1 - prob)
     if is_pos:
         focus_instruction = f"Grad-CAM focus: {focus}. Briefly explain what this focus region indicates in section 2."
     else:
@@ -574,7 +555,7 @@ def groq_summary(patient, prob, focus, ptype, side, is_pos):
 RULES: No clinical findings, no lobe names, no medication. Not a diagnosis.
 Patient: {patient['age']}-yr {patient['gender']}, location: {patient.get('location', 'N/A')}.
 Type (user-entered): {ptype}. Side (user-entered): {side}.
-Model: {label}, confidence {prob:.1%}. {focus_instruction}
+Model: {label}, confidence {confidence:.1%}. {focus_instruction}
 Write 3 short plain-language sections:
 1. What model output means (screening aid, not diagnosis).
 2. Explain the Grad-CAM focus / attention information as instructed above.
@@ -594,21 +575,8 @@ Conversation:\n{hist}\nUSER: {query}\nASSISTANT:"""
     return _groq_call(prompt)
 
 # ============================================================
-# PDF — MEDICAL REPORT FORMAT (revised)
+# PDF REPORT
 # ============================================================
-# CHANGES vs previous version:
-#  - Header redesigned to look like a formal lab/radiology report
-#    (report title, subtitle, report number, generation timestamp in one block)
-#  - "Patient Information" and "Screening Result" are now clearly separated
-#    into their own labelled sections with a cleaner two-column layout
-#  - Added an explicit "Impression" section (plain-language, non-diagnostic)
-#  - For NEGATIVE results: no Grad-CAM / focus-region image or text is
-#    included at all (previously a fake heatmap was always shown).
-#    Only the input radiograph + confidence donut are shown.
-#  - For POSITIVE results: input radiograph, Grad-CAM overlay, location map
-#    and confidence donut are all shown (3-image + donut layout retained).
-#  - Disclaimer section restyled and expanded with a signature/footer block
-#    typical of generated medical/research reports.
 def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, is_pos):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=18*mm, leftMargin=18*mm,
@@ -623,6 +591,8 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     light = colors.HexColor("#f0fdfa")
     grid  = colors.HexColor("#ccfbf1")
     result_col = red if is_pos else green
+    # FIX: confidence in the actual result
+    confidence = prob if is_pos else (1 - prob)
 
     def S(n, **kw):
         d = dict(fontName="Helvetica", fontSize=10, leading=14, textColor=dark)
@@ -645,14 +615,14 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
 
     story = []
 
-    # ---------- HEADER ----------
     report_no = datetime.now().strftime("PNA-%Y%m%d-%H%M%S")
     header_tbl = Table(
-        [[Paragraph("PNEUMONIA.AI — AUTOMATED CHEST X-RAY SCREENING REPORT", TITLE)],
-         [Paragraph("Research &amp; Educational Use Only — NOT a clinical diagnosis or medical device output.", SUBT)],
-         [Paragraph(f"Report ID: {report_no} &nbsp;&nbsp;|&nbsp;&nbsp; "
-                     f"Generated: {datetime.now().strftime('%d %B %Y, %H:%M:%S')}", REPID)]],
-        colWidths=[W])
+        [
+    [Paragraph("<b>INVESTIGATIONAL RADIOGRAPHIC EVALUATION REPORT</b>", TITLE)],
+    [Paragraph("<i>Clinical Research &amp; Academic Methodology Protocol — Non-Diagnostic Record</i>", SUBT)],
+    [Paragraph(f"Accession No: {report_no} | Processed: {datetime.now().strftime('%d-%b-%Y | %H:%M:%S')} (IST)", REPID)]
+],
+colWidths=[W])
     header_tbl.setStyle(TableStyle([
         ("LEFTPADDING", (0,0), (-1,-1), 0),
         ("TOPPADDING", (0,0), (-1,-1), 1),
@@ -661,7 +631,6 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     story.append(header_tbl)
     story.append(HRFlowable(width="100%", thickness=3, color=teal, spaceBefore=6, spaceAfter=10))
 
-    # ---------- PATIENT INFORMATION ----------
     story.append(Paragraph("1. Patient Information", SH))
     patient_tbl = Table([
         [Paragraph("PATIENT NAME", ML), Paragraph("AGE / GENDER", ML), Paragraph("LOCATION", ML)],
@@ -684,14 +653,13 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     story.append(patient_tbl)
     story.append(Spacer(1, 10))
 
-    # ---------- SCREENING RESULT ----------
     story.append(Paragraph("2. Screening Result", SH))
     result_label = "PNEUMONIA SUSPECTED" if is_pos else "NO PNEUMONIA DETECTED"
-    focus_text = focus if is_pos else "Not applicable (negative screen — no attention region highlighted)"
+    focus_text = focus if is_pos else "Not applicable (negative screen - no attention region highlighted)"
     result_tbl = Table([
         [Paragraph("CLASSIFICATION", ML), Paragraph("MODEL CONFIDENCE", ML), Paragraph("GRAD-CAM FOCUS REGION", ML)],
         [Paragraph(result_label, RESULT),
-         Paragraph(f"{prob*100:.1f}%", CONF),
+         Paragraph(f"{confidence*100:.1f}%", CONF),
          Paragraph(focus_text, TL if is_pos else BODY)],
     ], colWidths=[W*0.32, W*0.22, W*0.46])
     result_tbl.setStyle(TableStyle([
@@ -707,7 +675,6 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     story.append(result_tbl)
     story.append(Spacer(1, 10))
 
-    # ---------- PROBABILITY BREAKDOWN ----------
     prob_tbl = Table([
         [Paragraph("CLASS", ML), Paragraph("PROBABILITY", ML)],
         [Paragraph("Pneumonia", BODY), Paragraph(f"{prob*100:.1f}%", S("pp", fontName="Helvetica-Bold", textColor=red if is_pos else dark))],
@@ -724,17 +691,15 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     story.append(prob_tbl)
     story.append(Spacer(1, 10))
 
-    # ---------- IMAGES ----------
     rp, hp, lp, dp = "t_raw.png", "t_hm.png", "t_loc.png", "t_dnt.png"
     cv2.imwrite(rp, raw_img)
 
-    # Confidence donut (always shown)
     fig_d, ax_d = plt.subplots(figsize=(2.4, 2.4), dpi=200)
     fig_d.patch.set_facecolor("white")
     donut_col = "#dc2626" if is_pos else "#047857"
-    ax_d.pie([prob, 1-prob], colors=[donut_col, "#e2e8f0"],
+    ax_d.pie([confidence, 1-confidence], colors=[donut_col, "#e2e8f0"],
              startangle=90, counterclock=False, wedgeprops=dict(width=0.4, edgecolor="none"))
-    ax_d.text(0, 0.06, f"{prob*100:.1f}%", ha="center", va="center", fontsize=12, fontweight="bold", color="#0f172a")
+    ax_d.text(0, 0.06, f"{confidence*100:.1f}%", ha="center", va="center", fontsize=12, fontweight="bold", color="#0f172a")
     ax_d.text(0, -0.16, "CONFIDENCE", ha="center", va="center", fontsize=7, color="#64748b", fontfamily="monospace")
     plt.tight_layout()
     plt.savefig(dp, format="png", dpi=200, bbox_inches="tight")
@@ -746,7 +711,6 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     story.append(Paragraph("3. Radiograph &amp; Visualisation", SH))
 
     if is_pos:
-        # POSITIVE: show input, Grad-CAM overlay, location map (3 across)
         cv2.imwrite(hp, overlay_img)
         loc_fig.savefig(lp, dpi=200, facecolor=loc_fig.get_facecolor(), bbox_inches="tight")
         IW = (W - 6*mm) / 3
@@ -761,12 +725,9 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
         it = Table([cells], colWidths=[IW]*3, rowHeights=[IH+20])
         img_files = [rp, hp, lp, dp]
     else:
-        # NEGATIVE: only input radiograph (no fabricated heatmap/location map)
         IW = (W - 4*mm) / 2
         IH = IW * 0.9
-        cells = [
-            ic(rp, "INPUT RADIOGRAPH", IW, IH),
-        ]
+        cells = [ic(rp, "INPUT RADIOGRAPH", IW, IH)]
         for t in cells:
             t.setStyle(TableStyle([("ALIGN", (0,0), (-1,-1), "CENTER")]))
         it = Table([cells], colWidths=[IW], rowHeights=[IH+20])
@@ -783,12 +744,11 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     story.append(it)
     story.append(Spacer(1, 10))
 
-    # ---------- IMPRESSION ----------
     story.append(Paragraph("4. Impression (Non-Diagnostic)", SH))
     if is_pos:
         impression_txt = (
             f"The automated classifier flagged this radiograph as <b>pneumonia suspected</b> with "
-            f"{prob*100:.1f}% model confidence. The Grad-CAM visualisation indicates the model's attention "
+            f"{confidence*100:.1f}% model confidence. The Grad-CAM visualisation indicates the model's attention "
             f"was concentrated in the <b>{focus}</b> region. This is a model-attention map, not a confirmed "
             f"clinical finding, and the pneumonia type/side shown above were entered by the user, not derived "
             f"by the model."
@@ -796,22 +756,25 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     else:
         impression_txt = (
             f"The automated classifier did <b>not detect features consistent with pneumonia</b> in this "
-            f"radiograph, with {(1-prob)*100:.1f}% model confidence in the normal class. No attention "
+            f"radiograph, with {confidence*100:.1f}% model confidence in the normal class. No attention "
             f"region is highlighted for negative screens. This result does not rule out other respiratory "
             f"or medical conditions."
         )
     story.append(Paragraph(impression_txt, BODY))
     story.append(Spacer(1, 10))
 
-    # ---------- DISCLAIMER / FOOTER ----------
     story.append(Paragraph("5. Disclaimer", SH))
     disc_txt = (
-        "<b>This report is generated automatically by an AI model for research and educational purposes "
-        "only.</b> It is NOT a clinical diagnosis, NOT a substitute for professional medical evaluation, "
-        "and NOT issued by a licensed radiologist or physician. Grad-CAM visualisations (when shown) "
-        "represent regions of model attention, not confirmed pathology. Pneumonia type and affected side "
-        "fields are user-entered and are not derived from the model. Please consult a licensed physician "
-        "for any health concerns."
+       "<b>Clinical Notice:</b> This report is generated automatically for educational evaluation "
+    "and clinical research methodologies only. It does not constitute a formal diagnostic finding, "
+    "a certified radiological interpretation, or a substitute for an in-person medical assessment "
+    "by a licensed physician.\n\n"
+    "Visual overlays (such as Grad-CAM) represent computational regions of focus to highlight "
+    "areas of interest on the radiograph; they do not indicate confirmed pathology or definitive "
+    "tissue lesions. Clinical parameters—including suspected pneumonia type and anatomical "
+    "location (affected side)—are user-entered history and are not independently extracted from the image. "
+    "All findings require mandatory correlation with clinical symptoms and must be verified by a "
+    "licensed healthcare provider."
     )
     disc_t = Table([[Paragraph(disc_txt, DC)]], colWidths=[W])
     disc_t.setStyle(TableStyle([
@@ -827,9 +790,9 @@ def make_pdf(patient, prob, focus, ptype, side, raw_img, overlay_img, loc_fig, i
     story.append(HRFlowable(width="100%", thickness=1, color=grid))
     story.append(Spacer(1, 4))
     story.append(Paragraph(
-        f"PNEUMONIA.AI v4.1 &nbsp;|&nbsp; Report ID: {report_no} &nbsp;|&nbsp; "
-        f"Generated {datetime.now().strftime('%d %b %Y %H:%M')} &nbsp;|&nbsp; "
-        f"Automated research tool — NOT for clinical use.", FT))
+        f"PNEUMONIA.AI v4.1 | Report ID: {report_no} | "
+        f"Generated {datetime.now().strftime('%d %b %Y %H:%M')} | "
+        f"Automated research tool - NOT for clinical use.", FT))
 
     doc.build(story)
     for f in img_files:
@@ -891,30 +854,30 @@ if not st.session_state.pipeline_active:
     text-align:center;">PNEUMONIA.AI INTAKE PORTAL</div>
   <div style="font-family:monospace;font-size:11px;color:#5eead4;letter-spacing:1.5px;
     text-transform:uppercase;opacity:.75;margin-bottom:24px;text-align:center;">
-    Research Demo — Complete all fields before running pipeline</div>
+    Research Demo &mdash; Complete all fields before running pipeline</div>
 </div>""", unsafe_allow_html=True)
 
-                st.markdown('<div class="disc">⚠ NOT A MEDICAL DEVICE. NOT FOR CLINICAL USE.</div>', unsafe_allow_html=True)
+                st.markdown('<div class="disc">&#9888; NOT A MEDICAL DEVICE. NOT FOR CLINICAL USE.</div>', unsafe_allow_html=True)
 
-                st.markdown('<div class="flabel-g">👤 Patient Name</div>', unsafe_allow_html=True)
+                st.markdown('<div class="flabel-g">Patient Name</div>', unsafe_allow_html=True)
                 p_name=st.text_input("name_",value="Subject 001",label_visibility="collapsed")
                 c1,c2=st.columns(2)
                 with c1:
-                    st.markdown('<div class="flabel-g">⏳ Age</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="flabel-g">Age</div>', unsafe_allow_html=True)
                     p_age=st.number_input("age_",min_value=0,max_value=120,value=45,label_visibility="collapsed")
                 with c2:
-                    st.markdown('<div class="flabel-g">🧬 Gender</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="flabel-g">Gender</div>', unsafe_allow_html=True)
                     p_gender=st.selectbox("gender_",["Male","Female","Other"],label_visibility="collapsed")
-                st.markdown('<div class="flabel-g">📍 Patient Location</div>', unsafe_allow_html=True)
+                st.markdown('<div class="flabel-g">Patient Location</div>', unsafe_allow_html=True)
                 p_location=st.text_input("loc_",value="",placeholder="e.g. Balasore, Odisha, IN",label_visibility="collapsed")
                 c3,c4=st.columns(2)
                 with c3:
-                    st.markdown('<div class="flabel-t">🦠 Pneumonia Type</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="flabel-t">Pneumonia Type</div>', unsafe_allow_html=True)
                     p_type=st.selectbox("ptype_",["Unknown","Bacterial","Viral","Fungal"],label_visibility="collapsed")
                 with c4:
-                    st.markdown('<div class="flabel-t">🫁 Affected Side</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="flabel-t">Affected Side</div>', unsafe_allow_html=True)
                     p_side=st.selectbox("pside_",["Unknown","Left Lung","Right Lung","Bilateral"],label_visibility="collapsed")
-                st.markdown('<div class="flabel-t">🩻 Chest X-Ray Image</div>', unsafe_allow_html=True)
+                st.markdown('<div class="flabel-t">Chest X-Ray Image</div>', unsafe_allow_html=True)
                 st.markdown(f'<div style="display:flex;justify-content:center;margin-bottom:8px;opacity:.8;">{brand_svg(28)}</div>',unsafe_allow_html=True)
                 uploaded=st.file_uploader("xray_",type=["png","jpg","jpeg"],label_visibility="collapsed")
 
@@ -923,10 +886,10 @@ if not st.session_state.pipeline_active:
                     arr=np.asarray(bytearray(raw_bytes),dtype=np.uint8)
                     prev=cv2.imdecode(arr,cv2.IMREAD_COLOR)
                     if prev is None:
-                        st.error("⚠️ Could not decode image.")
+                        st.error("Could not decode image.")
                     else:
                         st.write("")
-                        st.markdown('<span class="scap">Preview — Ready For Pipeline</span>',unsafe_allow_html=True)
+                        st.markdown('<span class="scap">Preview &mdash; Ready For Pipeline</span>',unsafe_allow_html=True)
                         st.write("")
                         pc1,pc2=st.columns([1,1.2],gap="medium")
                         with pc1:
@@ -939,11 +902,11 @@ if not st.session_state.pipeline_active:
 
                 _,bc,_=st.columns([1,1,1])
                 with bc:
-                    go=st.button("⚡ Run Screening Pipeline →",type="primary")
+                    go=st.button("Run Screening Pipeline",type="primary")
 
             if go:
                 if not uploaded:
-                    st.error("⚠️ Please upload a chest X-ray image.")
+                    st.error("Please upload a chest X-ray image.")
                 else:
                     st.session_state.p_name=p_name; st.session_state.p_age=p_age
                     st.session_state.p_gender=p_gender
@@ -959,7 +922,7 @@ if not st.session_state.pipeline_active:
     <div class="ldr-ring"></div><div class="ldr-inner"></div>
   </div>
   <div style="font-family:monospace;color:#fff;font-size:15px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:5px;">Running Pipeline</div>
-  <div style="font-family:monospace;color:#5eead4;font-size:11px;letter-spacing:1px;margin-bottom:22px;">Analysing radiograph — please wait</div>
+  <div style="font-family:monospace;color:#5eead4;font-size:11px;letter-spacing:1px;margin-bottom:22px;">Analysing radiograph &mdash; please wait</div>
   <div style="display:inline-flex;flex-direction:column;gap:10px;text-align:left;font-family:monospace;font-size:12px;color:#94a3b8;background:rgba(13,148,136,.05);border:1px solid rgba(45,212,191,.12);border-radius:12px;padding:16px 22px;">
     <div style="display:flex;align-items:center;gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:#2dd4bf;box-shadow:0 0 8px rgba(45,212,191,.6);animation:glow 1.4s ease-in-out infinite;"></span> Ingesting X-ray image</div>
     <div style="display:flex;align-items:center;gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:#2dd4bf;box-shadow:0 0 8px rgba(45,212,191,.6);animation:glow 1.4s .25s ease-in-out infinite;"></span> Running ResNet50 classifier</div>
@@ -985,16 +948,15 @@ else:
 
     if model is None:
         st.error("Model not found. Place model at 'storage/models/xray_model_best.h5' and restart.")
-        if st.button("↩️ Return to Portal"):
+        if st.button("Return to Portal"):
             st.session_state.pipeline_active=False; st.rerun()
     else:
         prob=float(model.predict(tensor)[0][0])
         is_pos=prob>0.5
 
-        # ---- Grad-CAM / focus only computed & used for POSITIVE results ----
-        # FIX: previously these were always computed and a fake hotspot/
-        # focus box could be generated for negative cases. Now, for negative
-        # results we skip Grad-CAM heatmap entirely and use neutral defaults.
+        # FIX: confidence = how sure model is in its stated conclusion
+        confidence = prob if is_pos else (1 - prob)
+
         if is_pos:
             hm = gradcam(tensor, model)
             hm_r = cv2.resize(hm, (raw_img.shape[1], raw_img.shape[0]))
@@ -1033,25 +995,25 @@ else:
     <h2 style="margin:4px 0 2px;font-family:sans-serif;font-weight:800;color:#fff;font-size:20px;">
       Subject: {st.session_state.p_name.upper()}</h2>
     <span style="font-family:monospace;font-size:12px;color:#2dd4bf;letter-spacing:.5px;">
-      {datetime.now().strftime("%B %d, %Y")} • {st.session_state.p_age} Yrs • {st.session_state.p_gender} • 📍 {plocation}
+      {datetime.now().strftime("%B %d, %Y")} &#8226; {st.session_state.p_age} Yrs &#8226; {st.session_state.p_gender} &#8226; {plocation}
     </span><br>
     <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
       {type_chip(ptype)}{side_chip(pside)}
-      <span class="type-chip chip-unkn">📍 {plocation}</span>
+      <span class="type-chip chip-unkn">{plocation}</span>
     </div>
   </div>
   <div style="position:relative;z-index:1;">{brand_svg(44)}</div>
 </div>""", unsafe_allow_html=True)
 
-        st.markdown('<div class="disc">⚠ Automated screening — research/education only. Not a diagnosis. Consult a physician.</div>',unsafe_allow_html=True)
+        st.markdown('<div class="disc">&#9888; Automated screening &mdash; research/education only. Not a diagnosis. Consult a physician.</div>',unsafe_allow_html=True)
 
         main1,main2=st.columns([5,3],gap="large")
 
         with main1:
             with st.container(border=True):
                 badge=f'<div class="badge-pos">PNEUMONIA SUSPECTED</div>' if is_pos else f'<div class="badge-neg">NO PNEUMONIA DETECTED</div>'
-                # FIX: only show the "📍 region" chip for POSITIVE results
-                region_chip = f'<span class="type-chip chip-unkn">📍 {region}</span>' if is_pos else ''
+                region_chip = f'<span class="type-chip chip-unkn">{region}</span>' if is_pos else ''
+
                 st.markdown(f"""
 <span class="scap">Classifier Output</span>
 <div style="margin:8px 0 14px;">{badge}</div>
@@ -1061,13 +1023,14 @@ else:
 </div>
 <span class="scap">Model Confidence Score</span>
 <h1 style="color:#2dd4bf;font-family:sans-serif;font-weight:800;margin:2px 0 20px;font-size:38px;
-  text-shadow:0 0 20px rgba(45,212,191,.35);">{prob:.1%}</h1>
+  text-shadow:0 0 20px rgba(45,212,191,.35);">{confidence:.1%}</h1>
 """, unsafe_allow_html=True)
 
                 pc1,pc2,pc3,pc4=st.columns(4)
+                # FIX: confidence pill now shows result confidence, not raw pneumonia prob
                 pills=[
                     ("Result","POSITIVE" if is_pos else "NEGATIVE","#fca5a5" if is_pos else "#6ee7b7"),
-                    ("Confidence",f"{prob:.1%}","#fff"),
+                    ("Confidence",f"{confidence:.1%}","#fff"),
                     ("Type",ptype,"#fca5a5" if ptype=="Bacterial" else "#d8b4fe" if ptype=="Viral" else "#fde68a" if ptype=="Fungal" else "#94a3b8"),
                     ("Side",pside,"#93c5fd" if "Left" in pside else "#5eead4" if "Right" in pside else "#fcd34d" if "Bilateral" in pside else "#94a3b8"),
                 ]
@@ -1088,101 +1051,105 @@ else:
 </div></div>""", unsafe_allow_html=True)
 
                 st.write("")
-                # FIX: badge text now correctly reflects is_pos (consolidation
-                # alert only for positive, normal badge for negative) and the
-                # focus label is only rendered for positive results.
+
+                # FIX: use HTML entities only — no raw unicode special chars in f-strings
                 if is_pos:
-                    overlay_badge = '<div class="consolidation-badge">⚠ CONSOLIDATION ALERT</div>'
-                    focus_label_html = f'<div class="focus-label">📍 {region}</div>'
+                    overlay_badge = '<div class="consolidation-badge">&#9888; CONSOLIDATION ALERT</div>'
+                    focus_label_html = '<div class="focus-label">&#128205; ' + region + '</div>'
                     gradcam_header_label = "GRAD-CAM SPATIAL FOCUS"
                 else:
-                    overlay_badge = '<div class="normal-badge">✓ NORMAL</div>'
+                    overlay_badge = '<div class="normal-badge">&#10003; NORMAL</div>'
                     focus_label_html = ''
-                    gradcam_header_label = "RADIOGRAPH (NO FOCUS — NEGATIVE)"
+                    gradcam_header_label = "RADIOGRAPH (NO FOCUS - NEGATIVE)"
 
-                st.markdown(f"""
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
-  <div class="xray-panel-wrap">
-    <div class="xray-panel-header">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;">
-        <circle cx="6" cy="6" r="5" stroke="#94a3b8" stroke-width="1.5"/>
-        <circle cx="6" cy="6" r="2" fill="#94a3b8"/>
-      </svg>
-      INPUT RADIOGRAPH
-    </div>
-    <div class="xray-panel-body">
-      <img src="data:image/png;base64,{raw_b64}" style="width:100%;height:260px;object-fit:cover;display:block;filter:brightness(0.95) contrast(1.05);">
-    </div>
-  </div>
-  <div class="xray-panel-wrap">
-    <div class="xray-panel-header teal">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;">
-        <circle cx="6" cy="6" r="5" stroke="#2dd4bf" stroke-width="1.5"/>
-        <circle cx="6" cy="6" r="2" fill="#2dd4bf"/>
-      </svg>
-      {gradcam_header_label}
-    </div>
-    <div class="xray-panel-body">
-      <img src="data:image/png;base64,{ov_b64}" style="width:100%;height:260px;object-fit:cover;display:block;">
-      {focus_label_html}
-      {overlay_badge}
-    </div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+                st.markdown(
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">'
+                    '<div class="xray-panel-wrap">'
+                    '<div class="xray-panel-header">'
+                    '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;">'
+                    '<circle cx="6" cy="6" r="5" stroke="#94a3b8" stroke-width="1.5"/>'
+                    '<circle cx="6" cy="6" r="2" fill="#94a3b8"/>'
+                    '</svg>'
+                    'INPUT RADIOGRAPH'
+                    '</div>'
+                    '<div class="xray-panel-body">'
+                    f'<img src="data:image/png;base64,{raw_b64}" style="width:100%;height:260px;object-fit:cover;display:block;filter:brightness(0.95) contrast(1.05);">'
+                    '</div>'
+                    '</div>'
+                    '<div class="xray-panel-wrap">'
+                    '<div class="xray-panel-header teal">'
+                    '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;">'
+                    '<circle cx="6" cy="6" r="5" stroke="#2dd4bf" stroke-width="1.5"/>'
+                    '<circle cx="6" cy="6" r="2" fill="#2dd4bf"/>'
+                    '</svg>'
+                    f'{gradcam_header_label}'
+                    '</div>'
+                    '<div class="xray-panel-body">'
+                    f'<img src="data:image/png;base64,{ov_b64}" style="width:100%;height:260px;object-fit:cover;display:block;">'
+                    f'{focus_label_html}'
+                    f'{overlay_badge}'
+                    '</div>'
+                    '</div>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
 
-                # FIX: location map only shown for POSITIVE results — there's
-                # nothing meaningful to localise for a negative screen.
                 if is_pos:
-                    st.markdown(f"""
-<div style="margin-top:14px;">
-  <span class="scap">Location Map</span>
-  <div style="margin-top:8px;background:#07140f;border-radius:12px;border:1px solid rgba(45,212,191,.18);
-    padding:12px;display:flex;align-items:center;justify-content:center;height:180px;
-    box-shadow:0 8px 24px rgba(0,0,0,.35);">
-    <img src="data:image/png;base64,{loc_b64}" style="height:160px;width:auto;max-width:100%;display:block;border-radius:8px;">
-  </div>
-</div>
-""", unsafe_allow_html=True)
+                    st.markdown(
+                        '<div style="margin-top:14px;">'
+                        '<span class="scap">Location Map</span>'
+                        '<div style="margin-top:8px;background:#07140f;border-radius:12px;border:1px solid rgba(45,212,191,.18);'
+                        'padding:12px;display:flex;align-items:center;justify-content:center;height:180px;'
+                        'box-shadow:0 8px 24px rgba(0,0,0,.35);">'
+                        f'<img src="data:image/png;base64,{loc_b64}" style="height:160px;width:auto;max-width:100%;display:block;border-radius:8px;">'
+                        '</div>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
 
             st.write("")
             with st.container(border=True):
-                st.markdown('<span class="scap">📊 Animated Confidence Score</span>',unsafe_allow_html=True)
+                st.markdown('<span class="scap">Animated Confidence Score</span>',unsafe_allow_html=True)
                 st.write("")
                 _,dc,_=st.columns([1,2,1])
                 with dc:
+                    # FIX: pass confidence (not raw prob) to animated donut
                     components.html(animated_donut(prob,is_pos,height=220,key="dnt_results"),height=235)
 
         with main2:
             with st.container(border=True):
                 st.markdown('<span class="scap">About This Result</span><br><br>',unsafe_allow_html=True)
-                # FIX: only mention the focus box/crosshair for positive results
                 if is_pos:
                     focus_note = (
                         f"Grad-CAM focus: <b>{region}</b><br>"
-                        "The white box &amp; crosshair mark where the model's attention was concentrated. "
-                        "This is a visual aid only — not a confirmed clinical finding.<br><br>"
+                        "The targeted bounding box and crosshair delineate the computational Region of Interest (ROI). "
+                        "This serves strictly as a visual mapping aid and does not constitute confirmed histopathology.<br><br>"
                     )
                 else:
                     focus_note = (
-                        "No focus region is highlighted for a negative screen, "
-                        "since the model did not detect pneumonia-consistent patterns.<br><br>"
+                        "No localized abnormalities or focal opacities were segmented,   "
+                        "conforming with the lack of radiographically significant patterns.<br><br>"
                     )
-                st.markdown(f"""
-<div class="cbubble">
-<span style="color:#2dd4bf;font-weight:bold;font-family:monospace;">SCREENING SUMMARY</span><br><br>
-Classifier: <b>{'PNEUMONIA SUSPECTED' if is_pos else 'NO PNEUMONIA DETECTED'}</b> — {prob:.1%}<br><br>
-Type: {type_chip(ptype)}&nbsp; Side: {side_chip(pside)}<br>
-Location: <b>📍 {plocation}</b><br><br>
-{focus_note}
-<i>This tool does not provide medical advice. Consult a licensed physician.</i>
-</div>""", unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="cbubble">'
+                    '<span style="color:#2dd4bf;font-weight:bold;font-family:monospace;">SCREENING SUMMARY</span><br><br>'
+                    f'Classifier: <b>{"PNEUMONIA SUSPECTED" if is_pos else "NO PNEUMONIA DETECTED"}</b> &mdash; {confidence:.1%}<br><br>'
+                    f'Type: {type_chip(ptype)}&nbsp; Side: {side_chip(pside)}<br>'
+                    f'Location: <b>{plocation}</b><br><br>'
+                    f'{focus_note}'
+                    '<i>Notice: For investigational review only. Findings require formal correlation by a licensed healthcare provider.</i>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
 
         # ── THREE CHARTS ROW ─────────────────────────────────
         st.write("")
         with st.container(border=True):
-            st.markdown('<span class="scap">📊 Diagnostic Charts</span>', unsafe_allow_html=True)
+            st.markdown('<span class="scap">Diagnostic Charts</span>', unsafe_allow_html=True)
             st.write("")
+            # FIX: charts now use `confidence` for the gauge/donut displays
+            # but still show raw prob vs (1-prob) for the class breakdown bar/pie
+            gauge_col = "#ef4444" if is_pos else "#2dd4bf"
             charts_html = f"""
 <style>
 .chart-grid{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;width:100%;}}
@@ -1193,29 +1160,21 @@ Location: <b>📍 {plocation}</b><br><br>
 canvas{{display:block;}}
 </style>
 <div class="chart-grid">
-
-  <!-- BAR CHART -->
   <div class="chart-card">
-    <div class="chart-title">📊 Bar Chart</div>
+    <div class="chart-title">Bar Chart</div>
     <canvas id="barChart" width="240" height="200"></canvas>
   </div>
-
-  <!-- GAUGE CHART -->
   <div class="chart-card">
-    <div class="chart-title">🎯 Gauge Chart</div>
+    <div class="chart-title">Gauge Chart</div>
     <canvas id="gaugeChart" width="240" height="200"></canvas>
   </div>
-
-  <!-- PIE CHART -->
   <div class="chart-card">
-    <div class="chart-title">🥧 Pie Chart</div>
+    <div class="chart-title">Pie Chart</div>
     <canvas id="pieChart" width="240" height="200"></canvas>
   </div>
-
 </div>
 
 <script>
-// ── BAR CHART ──
 (function(){{
   var c=document.getElementById("barChart");
   var ctx=c.getContext("2d");
@@ -1245,13 +1204,12 @@ canvas{{display:block;}}
   }});
 }})();
 
-// ── GAUGE CHART ──
 (function(){{
   var c=document.getElementById("gaugeChart");
   var ctx=c.getContext("2d");
   var W=240,H=200;
-  var val={prob:.4f};
-  var gcol="{("#ef4444" if is_pos else "#2dd4bf")}";
+  var val={confidence:.4f};
+  var gcol="{gauge_col}";
   var cx=W/2, cy=130, R=80;
   var startA=Math.PI, endA=2*Math.PI;
   var fillA=startA+(val*(endA-startA));
@@ -1271,13 +1229,12 @@ canvas{{display:block;}}
   ctx.fillText("0%",cx-R+4,cy+28);ctx.fillText("100%",cx+R-4,cy+28);
 }})();
 
-// ── PIE CHART ──
 (function(){{
   var c=document.getElementById("pieChart");
   var ctx=c.getContext("2d");
   var W=240,H=200;
   var pneu={prob:.4f}, norm=1-pneu;
-  var pcol="{("#ef4444" if is_pos else "#2dd4bf")}";
+  var pcol="{gauge_col}";
   var cx=W/2, cy=88, R=68;
   ctx.clearRect(0,0,W,H);
   var slices=[
@@ -1315,93 +1272,86 @@ canvas{{display:block;}}
         # ── MEDICINE DISCLAIMER ───────────────────────────────
         st.write("")
         with st.container(border=True):
-            st.markdown('<span class="scap">💊 Medicine & Treatment Information</span>', unsafe_allow_html=True)
+            st.markdown('<span class="scap">Medicine &amp; Treatment Information</span>', unsafe_allow_html=True)
             st.write("")
-            st.markdown(f"""
-<div style="background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(127,29,29,.12));
-  border:1px solid rgba(239,68,68,.25);border-left:4px solid #ef4444;
-  border-radius:12px;padding:20px 22px;font-family:sans-serif;font-size:13px;line-height:1.8;color:#e2f8f0;">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-    <span style="font-size:22px;">⚕️</span>
-    <span style="font-family:monospace;font-size:12px;font-weight:bold;color:#fca5a5;letter-spacing:1.5px;text-transform:uppercase;">
-      Important Medical Disclaimer
-    </span>
-  </div>
-  <p style="margin:0 0 12px;color:#fcd34d;font-weight:600;">
-    ⚠️ This tool does NOT provide medicine recommendations, prescriptions, or treatment advice.
-  </p>
-  <p style="margin:0 0 12px;">
-    Pneumonia treatment varies significantly based on the type (bacterial, viral, fungal), 
-    severity, patient age, and underlying health conditions. Only a licensed medical professional 
-    can evaluate your condition and prescribe appropriate treatment.
-  </p>
-  <p style="margin:0 0 16px;">
-    Please consult a qualified physician or visit a hospital immediately if you suspect pneumonia.
-  </p>
-  <div style="display:flex;gap:12px;flex-wrap:wrap;">
-    <a href="https://www.who.int/news-room/fact-sheets/detail/pneumonia" target="_blank"
-      style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,.12);
-      color:#2dd4bf;border:1px solid rgba(45,212,191,.3);border-radius:8px;
-      padding:8px 16px;font-family:monospace;font-size:11px;font-weight:bold;
-      text-decoration:none;letter-spacing:.5px;transition:all .3s;">
-      🌐 WHO — Pneumonia Info
-    </a>
-    <a href="https://www.cdc.gov/pneumonia" target="_blank"
-      style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,.12);
-      color:#2dd4bf;border:1px solid rgba(45,212,191,.3);border-radius:8px;
-      padding:8px 16px;font-family:monospace;font-size:11px;font-weight:bold;
-      text-decoration:none;letter-spacing:.5px;">
-      🏥 CDC — Pneumonia Guide
-    </a>
-    <a href="https://www.nhp.gov.in" target="_blank"
-      style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,.12);
-      color:#2dd4bf;border:1px solid rgba(45,212,191,.3);border-radius:8px;
-      padding:8px 16px;font-family:monospace;font-size:11px;font-weight:bold;
-      text-decoration:none;letter-spacing:.5px;">
-      🇮🇳 NHP India — Health Portal
-    </a>
-  </div>
-</div>""", unsafe_allow_html=True)
+            st.markdown(
+                '<div style="background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(127,29,29,.12));'
+                'border:1px solid rgba(239,68,68,.25);border-left:4px solid #ef4444;'
+                'border-radius:12px;padding:20px 22px;font-family:sans-serif;font-size:13px;line-height:1.8;color:#e2f8f0;">'
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+                '<span style="font-size:22px;">&#9877;</span>'
+                '<span style="font-family:monospace;font-size:12px;font-weight:bold;color:#fca5a5;letter-spacing:1.5px;text-transform:uppercase;">'
+                'Important Medical Disclaimer'
+                '</span>'
+                '</div>'
+                '<p style="margin:0 0 12px;color:#fcd34d;font-weight:600;">'
+                '&#9888; This tool does NOT provide medicine recommendations, prescriptions, or treatment advice.'
+                '</p>'
+                '<p style="margin:0 0 12px;">'
+                'Pneumonia treatment varies significantly based on the type (bacterial, viral, fungal), '
+                'severity, patient age, and underlying health conditions. Only a licensed medical professional '
+                'can evaluate your condition and prescribe appropriate treatment.'
+                '</p>'
+                '<p style="margin:0 0 16px;">'
+                'Please consult a qualified physician or visit a hospital immediately if you suspect pneumonia.'
+                '</p>'
+                '<div style="display:flex;gap:12px;flex-wrap:wrap;">'
+                '<a href="https://www.who.int/news-room/fact-sheets/detail/pneumonia" target="_blank"'
+                ' style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,.12);'
+                'color:#2dd4bf;border:1px solid rgba(45,212,191,.3);border-radius:8px;'
+                'padding:8px 16px;font-family:monospace;font-size:11px;font-weight:bold;'
+                'text-decoration:none;letter-spacing:.5px;">WHO &mdash; Pneumonia Info</a>'
+                '<a href="https://www.cdc.gov/pneumonia" target="_blank"'
+                ' style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,.12);'
+                'color:#2dd4bf;border:1px solid rgba(45,212,191,.3);border-radius:8px;'
+                'padding:8px 16px;font-family:monospace;font-size:11px;font-weight:bold;'
+                'text-decoration:none;letter-spacing:.5px;">CDC &mdash; Pneumonia Guide</a>'
+                '<a href="https://www.nhp.gov.in" target="_blank"'
+                ' style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,.12);'
+                'color:#2dd4bf;border:1px solid rgba(45,212,191,.3);border-radius:8px;'
+                'padding:8px 16px;font-family:monospace;font-size:11px;font-weight:bold;'
+                'text-decoration:none;letter-spacing:.5px;">NHP India &mdash; Health Portal</a>'
+                '</div>'
+                '</div>',
+                unsafe_allow_html=True
+            )
 
         # ── DOCTOR CHATBOT ────────────────────────────────────
         st.write("")
         with st.container(border=True):
-            st.markdown('<span class="scap">🩺 Talk to AI Doctor — Describe Your Symptoms</span>', unsafe_allow_html=True)
+            st.markdown('<span class="scap">Talk to AI Doctor &mdash; Describe Your Symptoms</span>', unsafe_allow_html=True)
             st.write("")
-            st.markdown("""
-<div style="background:linear-gradient(135deg,rgba(45,212,191,.06),rgba(5,150,105,.04));
-  border:1px solid rgba(45,212,191,.2);border-radius:10px;padding:12px 16px;
-  font-family:monospace;font-size:11px;color:#fcd34d;letter-spacing:.5px;margin-bottom:14px;">
-  ⚕️ This AI doctor provides general health information only. It does NOT prescribe medication
-  or replace a real physician. Always consult a licensed doctor for medical decisions.
-</div>""", unsafe_allow_html=True)
+            st.markdown(
+                '<div style="background:linear-gradient(135deg,rgba(45,212,191,.06),rgba(5,150,105,.04));'
+                'border:1px solid rgba(45,212,191,.2);border-radius:10px;padding:12px 16px;'
+                'font-family:monospace;font-size:11px;color:#fcd34d;letter-spacing:.5px;margin-bottom:14px;">'
+                '&#9877; This AI doctor provides general health information only. It does NOT prescribe medication '
+                'or replace a real physician. Always consult a licensed doctor for medical decisions.'
+                '</div>',
+                unsafe_allow_html=True
+            )
 
-            # Init doctor chat history
             if "doctor_chat" not in st.session_state:
                 st.session_state.doctor_chat = []
-                # Greeting message from doctor
                 st.session_state.doctor_chat.append((
                     "assistant",
-                    f"👋 Hello {st.session_state.p_name}! I'm your AI health assistant. "
-                    f"Your X-ray screening result is **{'POSITIVE — Pneumonia Suspected' if is_pos else 'NEGATIVE — No Pneumonia Detected'}** "
-                    f"with **{prob:.1%} confidence**.\n\n"
-                    f"Please tell me about your symptoms, how long you've had them, "
-                    f"and any concerns you'd like to discuss. I'm here to help guide you."
+                    f"Hello {st.session_state.p_name}! I'm your AI health assistant. "
+                    f"Your X-ray screening result is **{'POSITIVE - Pneumonia Suspected' if is_pos else 'NEGATIVE - No Pneumonia Detected'}** "
+                    f"with **{confidence:.1%} confidence**.\n\n"
+                    f"To help me understand your situation better, could you tell me:\n"
+                    f"1. What symptoms are you experiencing (fever, cough, breathlessness, chest pain, fatigue)?\n"
+                    f"2. When did these symptoms start, and have they been getting better, worse, or staying the same?\n\n"
+                    f"I'm here to help guide you and figure out how urgently you should see a doctor."
                 ))
 
-            # Display chat history
             doc_chat_container = st.container()
             with doc_chat_container:
                 for role, msg in st.session_state.doctor_chat:
                     with st.chat_message(role, avatar="🩺" if role=="assistant" else "🧑"):
                         st.markdown(msg)
 
-            # Chat input
             if doc_q := st.chat_input("Describe your symptoms or ask a health question…", key="doctor_chat_input"):
-                # Add user message
                 st.session_state.doctor_chat.append(("user", doc_q))
-
-                # Build context-aware doctor prompt
                 doc_history = "\n".join(
                     f"{'DOCTOR' if r=='assistant' else 'PATIENT'}: {m}"
                     for r, m in st.session_state.doctor_chat[-12:]
@@ -1414,20 +1364,46 @@ PATIENT DETAILS:
 - Gender: {st.session_state.p_gender}
 - Location: {plocation}
 - X-ray Result: {'PNEUMONIA SUSPECTED' if is_pos else 'NO PNEUMONIA DETECTED'}
-- Confidence: {prob:.1%}
+- Confidence: {confidence:.1%}
 - Pneumonia Type (user-entered): {ptype}
 - Affected Side (user-entered): {pside}
 - Grad-CAM Focus Region: {region}
 
+YOUR ROLE: Conduct a structured, empathetic triage conversation. You are NOT diagnosing
+and NOT prescribing — you are gathering information and helping the patient understand
+how urgently they should seek in-person medical care.
+
+TRIAGE CHECKLIST — work through these naturally over the conversation, one or two
+questions at a time (do not interrogate the patient with a long list at once):
+- Onset & duration: When did symptoms start? Sudden or gradual? Improving, stable, or worsening?
+- Fever: Do they have a fever? If so, roughly how high, and have they measured their temperature?
+- Cough: Dry or producing mucus/phlegm? What color is the phlegm, if any? Any blood?
+- Breathing: Any shortness of breath, or breathing faster than normal? Does it happen at rest or only with activity?
+- Chest symptoms: Any chest pain or tightness? Does it worsen with breathing or coughing?
+- Energy & appetite: Unusual tiredness, weakness, confusion, or reduced appetite/fluid intake?
+- Risk factors: Any existing conditions (asthma, COPD, heart disease, diabetes, immune issues), pregnancy, or age extremes (very young child or elderly)?
+- Oxygen/color: If they have a pulse oximeter, what does it read? Any bluish tint to lips or fingertips?
+
+RED-FLAG ESCALATION — if the patient reports ANY of the following, immediately and clearly
+recommend urgent in-person/emergency care (hospital or urgent care, not "wait and see"):
+- Severe or worsening shortness of breath, or breathing difficulty at rest
+- Bluish or grey lips/face/fingertips
+- Confusion, severe drowsiness, or difficulty staying awake
+- Chest pain that is severe, persistent, or worsening
+- High fever that won't come down, or fever with rigors/shaking chills
+- Coughing up blood
+- Signs of dehydration (very little urination, dizziness)
+- The patient is a young child, elderly, pregnant, or has a chronic condition and symptoms are worsening
+
 YOUR RULES:
-1. Be warm, empathetic, and clear — like a real doctor talking to a patient.
-2. Ask follow-up questions about symptoms (fever, cough, breathing difficulty, duration, severity).
-3. Provide general health guidance and explain what the X-ray result means in simple terms.
-4. NEVER prescribe specific medications or dosages.
+1. Be warm, empathetic, and clear like a real doctor talking to a patient.
+2. Ask 1-2 focused follow-up questions per turn from the triage checklist above — don't overwhelm the patient.
+3. Briefly explain what the X-ray screening result means in simple, plain language when relevant.
+4. NEVER prescribe specific medications, dosages, or brand names — not even over-the-counter ones.
 5. Always recommend consulting a real physician for diagnosis and treatment.
-6. If symptoms sound severe (high fever, breathing difficulty, chest pain), urgently recommend hospital visit.
-7. Keep responses concise — 3 to 6 sentences max per reply.
-8. You may mention general lifestyle advice (rest, hydration, avoiding cold air).
+6. If ANY red-flag symptom is mentioned, prioritize urgent care guidance over further questions.
+7. Keep responses concise, 3 to 6 sentences max per reply.
+8. You may mention general supportive self-care (rest, fluids, avoiding cold/smoky air, monitoring temperature) without naming any drug.
 
 CONVERSATION SO FAR:
 {doc_history}
@@ -1441,16 +1417,15 @@ DOCTOR:"""
                 st.session_state.doctor_chat.append(("assistant", doc_reply))
                 st.rerun()
 
-            # Clear doctor chat button
             if len(st.session_state.doctor_chat) > 1:
                 st.write("")
-                if st.button("🗑️ Clear Doctor Chat", use_container_width=True, key="clear_doc_chat"):
+                if st.button("Clear Doctor Chat", use_container_width=True, key="clear_doc_chat"):
                     st.session_state.doctor_chat = []
                     st.rerun()
 
         st.write("")
         with st.container(border=True):
-            st.markdown('<span class="scap">📄 AI-Generated Narrative Summary</span>',unsafe_allow_html=True)
+            st.markdown('<span class="scap">AI-Generated Narrative Summary</span>',unsafe_allow_html=True)
             st.write("")
             if st.session_state.diagnostic_context is None:
                 with st.spinner("Generating AI summary…"):
@@ -1465,13 +1440,15 @@ DOCTOR:"""
             st.write("")
             ac1,ac2=st.columns(2)
             with ac1:
-                st.download_button("📥 Export PDF Report",data=pdf,
+                st.download_button("Export PDF Report",data=pdf,
                     file_name=f"PneumoniaAI_{st.session_state.p_name.replace(' ','_')}.pdf",
                     mime="application/pdf",use_container_width=True)
             with ac2:
-                if st.button("↩️ Reset Session",use_container_width=True):
+                if st.button("Reset Session",use_container_width=True):
                     st.session_state.pipeline_active=False
-                    st.session_state.diagnostic_context=None; st.rerun()
+                    st.session_state.diagnostic_context=None
+                    st.session_state.doctor_chat=[]
+                    st.rerun()
 
 # ============================================================
 # SIDEBAR
@@ -1482,7 +1459,7 @@ with st.sidebar:
   {brand_svg(32)}
   <h3 style="font-family:sans-serif;font-weight:800;color:#fff;margin:0;font-size:15px;">Ask About This Tool</h3>
 </div>
-<p style="font-family:monospace;font-size:11px;color:#5eead4;margin:0 0 12px;">GENERAL INFO ONLY — NOT MEDICAL ADVICE</p>
+<p style="font-family:monospace;font-size:11px;color:#5eead4;margin:0 0 12px;">GENERAL INFO ONLY &mdash; NOT MEDICAL ADVICE</p>
 """, unsafe_allow_html=True)
     st.write("---")
     for role,msg in st.session_state.chat_history:
@@ -1498,7 +1475,7 @@ with st.sidebar:
             if st.session_state.pipeline_active and "p_name" in st.session_state:
                 try:
                     ctx={"label":"PNEUMONIA SUSPECTED" if prob>0.5 else "NO PNEUMONIA DETECTED",
-                         "confidence":f"{prob:.1%}","focus":region,"ptype":ptype,"side":pside}
+                         "confidence":f"{confidence:.1%}","focus":region,"ptype":ptype,"side":pside}
                 except: pass
             rep=groq_chat(q,st.session_state.chat_history,ctx)
         with st.chat_message("assistant"): st.markdown(rep)
