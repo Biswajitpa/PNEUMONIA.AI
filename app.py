@@ -30,6 +30,34 @@ from reportlab.lib.units import mm
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 import requests as _requests
+# ============================================================
+# AUTOMATIC ONNX MODEL WEIGHTS RUNTIME DOWNLOADER
+# ============================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.join(BASE_DIR, "storage", "models")
+MODEL_PATH = os.path.join(MODEL_DIR, "xray_model_best.onnx")
+
+# Create the folder structure automatically inside the cloud container if missing
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+if not os.path.exists(MODEL_PATH):
+    with st.spinner("📥 Synchronizing optimized ONNX model weights from cloud storage... please wait."):
+        # Pulls directly from your shared Google Drive file link
+        FILE_ID = "1-XmVDb3ldcpbMd--OX_PkbzBkDgceI0q"
+        MODEL_URL = f"https://docs.google.com/uc?export=download&id={FILE_ID}"
+        
+        try:
+            # Note: Using your imported _requests alias safely
+            response = _requests.get(MODEL_URL, stream=True)
+            response.raise_for_status()
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            st.success("✅ Model weights completely synchronized successfully!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Cloud model synchronization failed: {e}")
 
 load_dotenv()
 
