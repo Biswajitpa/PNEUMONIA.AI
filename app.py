@@ -6,8 +6,13 @@ import cv2
 import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
-import tensorflow as tf
 import matplotlib
+matplotlib.use('Agg') # Prevents GUI terminal errors on headless cloud servers
+import matplotlib.pyplot as plt
+from PIL import Image
+
+# 🚨 TENSORFLOW HAS BEEN REMOVED FROM THIS BLOCK TO PREVENT THE CONTAINER CRASH
+# Your core.classifier module will now handle the model weights via onnxruntime.
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
