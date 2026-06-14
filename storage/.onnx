@@ -1,0 +1,19 @@
+import tensorflow as tf
+import tf2onnx
+import os
+
+# 1. Define paths
+h5_model_path = "storage/models/xray_model_best.h5"
+onnx_model_path = "storage/models/xray_model_best.onnx"
+
+# 2. Load your original trained model weights
+print("🔄 Loading original H5 weights...")
+model = tf.keras.models.load_model(h5_model_path, compile=False)
+
+# 3. Convert the framework signature to ONNX format
+print("🚀 Converting to ONNX framework format...")
+input_signature = [tf.TensorSpec((None, 224, 224, 3), tf.float32, name="input")]
+tf2onnx.convert.from_keras(model, input_signature=input_signature, output_path=onnx_model_path)
+
+print(f"✅ Cleanly created: {onnx_model_path}")
+print("👉 Now, commit and push this new file to your GitHub repository!")
