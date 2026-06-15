@@ -102,5 +102,6 @@ Unlike traditional black-box AI models, this system focuses on transparency, int
 - Centurion University
 
 ## working photo
+<img width="1516" height="696" alt="image" src="https://github.com/user-attachments/assets/253d091b-9b24-4632-b72b-3a4d85de3f01" />
 
 
