@@ -6,60 +6,157 @@
   <img src="https://skillicons.dev/icons?i=python,flask,html,css,javascript,git,github,vscode"/>
 </p>
 
+## 🧠 Intelligent AI Knowledge Retrieval System
+
+## 🌟 Highlights
+
+- **Explainable, not just accurate** — Grad-CAM heatmaps show exactly which lung regions drove each prediction.
+- **Clinically-oriented pipeline** — Combines a ResNet50 classifier with an LLM-powered report generator for doctor-ready output.
+- **End-to-end web experience** — Upload an X-ray, get a prediction, a visual explanation, and a downloadable PDF report.
+- **Built for real clinical trust** — Designed around transparency and interpretability rather than black-box predictions.
+
+## 📌 Overview
+
+PNEUMONIA.AI is an intelligent medical imaging system designed to detect pneumonia from chest X-ray images using deep learning, with explainable AI outputs built in for clinical trust.
+
+Unlike traditional black-box AI models, this system focuses on transparency, interpretability, and clinical usability. It not only predicts pneumonia but also shows *where* and *why* the model made that decision using Grad-CAM heatmaps, making it suitable for real-world healthcare environments.
+
+## 🧠 Core Idea
+
+> "AI should not just predict — it should explain."
+
+This system combines:
+
+- 🧠 Deep Learning (ResNet50 CNN)
+- 🔍 Explainable AI (Grad-CAM)
+- ☁️ Cloud LLM (Gemini 2.5 Flash)
+- 📄 Automated clinical report generation
+- 🌐 Web-based medical interface
+
+## ⚙️ How It Works (Intelligent Pipeline)
+
 <p align="center">
-  <b>"AI should not just predict — it should explain."</b>
+  <img width="350" height="930" alt="Pipeline diagram" src="https://github.com/user-attachments/assets/a4ef2b60-a575-41ad-941f-9f828c2f1710"/>
 </p>
 
-## 📌 What It Does
+## 🧠 AI/ML Intelligence Layer
 
-PNEUMONIA.AI detects pneumonia from chest X-rays using a **ResNet50 CNN**, then explains *why* with **Grad-CAM heatmaps** — turning a black-box prediction into a visual, doctor-readable diagnosis. A built-in LLM (Gemini 2.5 Flash) auto-generates a clinical report as a downloadable PDF.
+### Why ResNet50?
 
-## ⚡ Why It Stands Out
+Deep networks suffer from vanishing gradients. ResNet solves this using residual learning:
 
-| Typical Medical AI | PNEUMONIA.AI |
-|---|---|
-| ❌ Black-box prediction | ✅ Visual explanation via Grad-CAM |
-| ❌ No clinical context | ✅ Auto-generated clinical report |
-| ❌ Hard to trust | ✅ Built for interpretability & trust |
+```
+H(x) = F(x) + x
+```
 
-## ⚙️ Pipeline
+- Enables deeper feature extraction
+- Improves medical image understanding
+- Captures fine lung abnormalities
 
-**X-ray upload → ResNet50 classification → Grad-CAM heatmap → Gemini clinical report → Web UI + PDF**
+### Explainable AI (Grad-CAM)
+
+To ensure transparency in medical decisions, the model's attention is visualized directly on the X-ray:
 
 <p align="center">
-  <img width="280" alt="Pipeline diagram" src="https://github.com/user-attachments/assets/a4ef2b60-a575-41ad-941f-9f828c2f1710"/>
-  <img width="220" alt="Grad-CAM visualization" src="https://github.com/user-attachments/assets/2bae5d2a-11bb-46d3-b635-d3ce37836a0d"/>
+  <img width="261" height="168" alt="Grad-CAM visualization" src="https://github.com/user-attachments/assets/2bae5d2a-11bb-46d3-b635-d3ce37836a0d"/>
 </p>
+
+## 🔬 Why This Project Matters
+
+**Traditional AI medical systems:**
+
+- ❌ Black-box predictions
+- ❌ No explanation
+- ❌ Low clinical trust
+
+**This system:**
+
+- ✅ Transparent predictions
+- ✅ Visual explanations
+- ✅ Clinically interpretable output
+- ✅ AI-generated report for doctors
+
+## 🏗️ System Architecture
+
+| Layer | Function |
+|-------|----------|
+| **Input Layer** | Chest X-ray image upload |
+| **AI Layer** | ResNet50 classification model |
+| **Explainability Layer** | Grad-CAM heatmaps |
+| **LLM Layer** | Gemini 2.5 clinical report generator |
+| **Output Layer** | Web UI + PDF report |
 
 ## 🛠️ Tech Stack
 
-`Python 3.11` · `TensorFlow/Keras` · `OpenCV` · `Flask` · `Gemini 2.5 Flash` · `ReportLab` · `Scikit-learn`
+- 🐍 Python 3.11
+- 🧠 TensorFlow / Keras
+- 🔍 OpenCV
+- 📊 NumPy, Matplotlib
+- 🌐 Flask (Web App)
+- ☁️ Gemini 2.5 Flash API
+- 📄 ReportLab (PDF Generation)
+- 📦 Scikit-learn
 
-## 📊 Evaluated On
+## 📊 Model Evaluation
 
-Accuracy · Precision/Recall · ROC-AUC — with Grad-CAM confirming the model attends to the actual infected lung regions, not spurious patterns.
+The system is evaluated using:
 
-## 🏥 Impact
+- Accuracy
+- Precision / Recall
+- ROC Curve
+- AUC Score
 
-Assists radiologists, rural clinics, and emergency triage by cutting diagnosis time and flagging pneumonia early — with reasoning a doctor can actually verify.
+**Interpretation:**
 
-## 📈 What's Next
+- AUC → 1.0 = highly accurate model
+- AUC → 0.5 = random prediction
 
-Multi-disease detection (TB, COVID-19) · DICOM support · Mobile app · Cloud GPU deployment · Hospital system integration
+**Grad-CAM output additionally:**
 
-## 🖼️ Demo
+- Highlights infected lung regions
+- Shows model reasoning visually
+- Builds clinical trust
+
+## 🏥 Real-World Impact
+
+This system can assist:
+
+- 🏥 Radiologists
+- 🧑‍⚕️ Doctors in rural areas
+- 🚑 Emergency diagnosis systems
+- 📊 Medical research institutions
+
+👉 It reduces diagnosis time and improves early detection of pneumonia.
+
+## 📈 Future Improvements
+
+- Multi-disease detection (TB, COVID-19)
+- DICOM medical image support
+- Mobile AI diagnostic app
+- Cloud GPU deployment
+- Hospital integration system
+
+## 🖼️ Working Demo
 
 <p align="center">
-  <img width="800" alt="Application screenshot" src="https://github.com/user-attachments/assets/253d091b-9b24-4632-b72b-3a4d85de3f01"/>
+  <img width="1516" height="696" alt="Application screenshot" src="https://github.com/user-attachments/assets/253d091b-9b24-4632-b72b-3a4d85de3f01"/>
 </p>
+
+## 👨‍💻 Created & Maintained By
 
 <p align="center">
   <img src="https://img.shields.io/badge/Author-Biswajit%20Pattanaik-0f2027?style=for-the-badge&logo=github&logoColor=white" alt="Author Badge"/>
 </p>
 
 <p align="center">
-  <b>Biswajit Pattanaik</b> — B.Tech (ECE), AI & Embedded Systems Developer, Centurion University<br/>
-  ⭐ Star it if you find it useful · 🤝 Issues & PRs welcome
+  <b>Biswajit Pattanaik</b><br/>
+  <i>B.Tech (ECE) | AI & Embedded Systems Developer | Centurion University</i>
+</p>
+
+<p align="center">
+  ⭐ If this project helped you, consider giving it a star — it goes a long way!<br/>
+  🐛 Found a bug or have an idea? Issues and pull requests are always welcome.<br/>
+  🤝 Open to feedback, collaboration, and discussion.
 </p>
 
 <p align="center">
