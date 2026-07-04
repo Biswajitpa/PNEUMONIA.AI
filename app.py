@@ -512,6 +512,25 @@ def side_chip(s):
 # ============================================================
 _GROQ_MODEL = "llama-3.3-70b-versatile"
 
+FRIENDLY_FALLBACK = (
+    "I'm having trouble connecting to the AI service right now. "
+    "This is a temporary issue on our end — please try again in a few minutes. "
+    "If your symptoms feel urgent, please contact a doctor or local emergency services directly."
+)
+
+def _is_error_response(text: str) -> bool:
+    """Detect if _groq_call returned an error string instead of a real completion."""
+    if not text:
+        return True
+    error_markers = (
+        "Groq API error",
+        "Groq request timed out",
+        "Groq call failed",
+        "AI features not enabled",
+    )
+    return any(text.startswith(marker) for marker in error_markers)
+
+
 def _groq_call(prompt: str) -> str:
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     if not api_key:
@@ -534,11 +553,15 @@ def _groq_call(prompt: str) -> str:
             timeout=45,
         )
         if not resp.ok:
+            # Log the real error server-side for debugging, but don't leak it to the user
+            print(f"[Groq API error] {resp.status_code}: {resp.text[:400]}")
             return f"Groq API error {resp.status_code}: {resp.text[:400]}"
         return resp.json()["choices"][0]["message"]["content"]
     except _requests.exceptions.Timeout:
+        print("[Groq API error] request timed out")
         return "Groq request timed out — try again."
     except Exception as e:
+        print(f"[Groq API error] {e}")
         return f"Groq call failed: {e}"
 
 
@@ -560,7 +583,8 @@ Write 3 short plain-language sections:
 1. What model output means (screening aid, not diagnosis).
 2. Explain the Grad-CAM focus / attention information as instructed above.
 3. Next step: consult licensed physician."""
-    return _groq_call(prompt)
+    result = _groq_call(prompt)
+    return FRIENDLY_FALLBACK if _is_error_response(result) else result
 
 
 def groq_chat(query, history, ctx=None):
@@ -572,7 +596,8 @@ def groq_chat(query, history, ctx=None):
     prompt = f"""You are an assistant in PNEUMONIA.AI (research X-ray screening tool).
 Explain how the tool works. NEVER diagnose or recommend medication. 2-5 sentences max.{ctx_b}
 Conversation:\n{hist}\nUSER: {query}\nASSISTANT:"""
-    return _groq_call(prompt)
+    result = _groq_call(prompt)
+    return FRIENDLY_FALLBACK if _is_error_response(result) else result
 
 # ============================================================
 # PDF REPORT
