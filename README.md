@@ -206,12 +206,22 @@ Grad-CAM outputs are evaluated qualitatively alongside these metrics — a well-
 
 ---
 
-## Author
+## About the Author
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Author-Biswajit%20Pattanaik-0f2027?style=for-the-badge&logo=github&logoColor=white"/>
+</p>
 
 **Biswajit Pattanaik**
-B.Tech (ECE) · AI & Embedded Systems Developer · Centurion University
+B.Tech, Electronics & Communication Engineering — Centurion University
+AI & Embedded Systems Developer
 
-If this project is useful to you, a star is appreciated. Issues, pull requests, feedback, and collaboration proposals are all welcome.
+Biswajit designed and built PNEUMONIA.AI end-to-end — from data preprocessing and model training, through the Grad-CAM explainability pipeline, to the Flask web interface and automated PDF reporting. The project reflects a deliberate design philosophy: an AI system intended for clinical use should never be a black box, and every prediction it makes should come with visual and written evidence a doctor can independently verify.
+
+**Connect / Contribute:**
+- ⭐ If this project helped you, a star means a lot and helps others discover it.
+- 🐛 Found a bug or have an improvement in mind? Open an issue.
+- 🤝 Interested in collaborating or extending the project? Pull requests and discussions are welcome.
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0ea5e9,100:0f2027&height=100&section=footer"/>
