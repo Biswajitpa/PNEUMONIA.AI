@@ -43,69 +43,69 @@ Instead of returning a single black-box prediction, the system shows **where** i
 
 ```mermaid
 flowchart TD
-    subgraph Client["Client Layer"]
-        U[User Browser]
-    end
+    U[👤 User / Patient-Doctor]
+    WEB[💻 Flask Web App]
+    PRE[⚙️ Preprocessing<br/>Resize · Normalize]
+    CNN[🧠 ResNet50 Classifier]
+    GC[🔍 Grad-CAM Engine]
+    GEMINI[☁️ Gemini 2.5 Flash]
+    PDF[📄 ReportLab PDF]
+    DASH[📊 Results Dashboard]
 
-    subgraph Web["Web Layer - Flask"]
-        UP[Upload Endpoint]
-        DASH[Results Dashboard]
-    end
+    U -->|Upload X-ray| WEB
+    WEB -->|Send image| PRE
+    PRE -->|Tensor input| CNN
+    CNN -->|Prediction + Confidence| GEMINI
+    CNN -->|Activation maps| GC
+    GC -->|Heatmap overlay| GEMINI
+    GC -->|Heatmap overlay| DASH
+    GEMINI -->|Clinical narrative| PDF
+    GEMINI -->|Clinical narrative| DASH
+    PDF -->|Download report| U
+    DASH -->|Render results| WEB
+    WEB -->|Serve response| U
 
-    subgraph Preprocess["Preprocessing"]
-        RESIZE[Resize / Normalize]
-        AUG[Augmentation]
-    end
+    classDef user fill:#22d3ee,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef web fill:#38bdf8,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef prep fill:#a3e635,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef cnn fill:#facc15,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef gc fill:#ec4899,stroke:#0f2027,color:#ffffff,stroke-width:2px
+    classDef gemini fill:#0f172a,stroke:#22d3ee,color:#ffffff,stroke-width:2px
+    classDef pdf fill:#f97316,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef dash fill:#34d399,stroke:#0f2027,color:#0f2027,stroke-width:2px
 
-    subgraph AI["AI / Inference Layer"]
-        CNN[ResNet50 Classifier]
-        CONF[Prediction + Confidence Score]
-    end
+    class U user
+    class WEB web
+    class PRE prep
+    class CNN cnn
+    class GC gc
+    class GEMINI gemini
+    class PDF pdf
+    class DASH dash
+```
 
-    subgraph XAI["Explainability Layer"]
-        GC[Grad-CAM Engine]
-        OVERLAY[Heatmap Overlay on X-ray]
-    end
+### Request Flow (Sequence)
 
-    subgraph LLM["Clinical Reasoning Layer"]
-        GEMINI[Gemini 2.5 Flash]
-        REPORT[Structured Clinical Report]
-    end
+```mermaid
+sequenceDiagram
+    participant V as 🧑 User
+    participant B as ⚙️ Flask Backend
+    participant M as 🧠 ResNet50 Model
+    participant G as 🔍 Grad-CAM
+    participant L as ☁️ Gemini 2.5 Flash
+    participant R as 📄 ReportLab
 
-    subgraph Output["Output Layer"]
-        PDF[PDF Report - ReportLab]
-        UI[Interactive Web Result]
-    end
-
-    U -->|X-ray upload| UP
-    UP --> RESIZE --> AUG --> CNN
-    CNN --> CONF
-    CNN --> GC --> OVERLAY
-    CONF --> GEMINI
-    OVERLAY --> GEMINI
-    GEMINI --> REPORT
-    REPORT --> PDF
-    REPORT --> UI
-    CONF --> UI
-    OVERLAY --> UI
-    UI --> DASH --> U
-    PDF -.->|download| U
-
-    classDef client fill:#0f2027,stroke:#0ea5e9,color:#ffffff,stroke-width:2px
-    classDef web fill:#0ea5e9,stroke:#0f2027,color:#ffffff,stroke-width:2px
-    classDef prep fill:#38bdf8,stroke:#0f2027,color:#0f2027,stroke-width:2px
-    classDef ai fill:#22d3ee,stroke:#0f2027,color:#0f2027,stroke-width:2px
-    classDef xai fill:#2dd4bf,stroke:#0f2027,color:#0f2027,stroke-width:2px
-    classDef llm fill:#34d399,stroke:#0f2027,color:#0f2027,stroke-width:2px
-    classDef output fill:#a3e635,stroke:#0f2027,color:#0f2027,stroke-width:2px
-
-    class U client
-    class UP,DASH web
-    class RESIZE,AUG prep
-    class CNN,CONF ai
-    class GC,OVERLAY xai
-    class GEMINI,REPORT llm
-    class PDF,UI output
+    V->>B: Upload chest X-ray
+    B->>M: Preprocessed image tensor
+    M-->>B: Prediction + confidence score
+    B->>G: Request activation heatmap
+    G-->>B: Grad-CAM overlay image
+    B->>L: Prediction + heatmap context
+    L-->>B: Structured clinical report
+    B->>R: Compile report + images
+    R-->>B: Generated PDF
+    B-->>V: Real-time result + downloadable PDF
+    Note over V,R: On new upload → pipeline resets and repeats
 ```
 
 **Data flow, step by step:**
