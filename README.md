@@ -9,7 +9,12 @@
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras-FF6F00?style=flat-square&logo=tensorflow&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-Web%20App-000000?style=flat-square&logo=flask&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Production--Ready-2ea44f?style=flat-square)
 ![License](https://img.shields.io/badge/Status-Active-0ea5e9?style=flat-square)
+
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=python,tensorflow,flask,opencv,html,css,javascript,git,github,vscode"/>
+</p>
 
 ---
 
