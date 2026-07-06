@@ -43,18 +43,63 @@ Instead of returning a single black-box prediction, the system shows **where** i
 
 ```mermaid
 flowchart TD
-    A[Chest X-ray Upload] --> B[Preprocessing<br/>Resize · Normalize · Augment]
-    B --> C[ResNet50 Classifier<br/>Pneumonia / Normal]
-    C --> D[Grad-CAM Engine<br/>Heatmap Generation]
-    C --> E[Prediction + Confidence Score]
-    D --> F[Explainability Overlay<br/>on Original X-ray]
-    E --> G[Gemini 2.5 Flash<br/>Clinical Report Generator]
-    F --> G
-    G --> H[PDF Report<br/>ReportLab]
-    E --> I[Web Dashboard<br/>Flask UI]
-    F --> I
-    G --> I
+    subgraph Client["Client Layer"]
+        U[User Browser]
+    end
+
+    subgraph Web["Web Layer - Flask"]
+        UP[Upload Endpoint]
+        DASH[Results Dashboard]
+    end
+
+    subgraph Preprocess["Preprocessing"]
+        RESIZE[Resize / Normalize]
+        AUG[Augmentation]
+    end
+
+    subgraph AI["AI / Inference Layer"]
+        CNN[ResNet50 Classifier]
+        CONF[Prediction + Confidence Score]
+    end
+
+    subgraph XAI["Explainability Layer"]
+        GC[Grad-CAM Engine]
+        OVERLAY[Heatmap Overlay on X-ray]
+    end
+
+    subgraph LLM["Clinical Reasoning Layer"]
+        GEMINI[Gemini 2.5 Flash]
+        REPORT[Structured Clinical Report]
+    end
+
+    subgraph Output["Output Layer"]
+        PDF[PDF Report - ReportLab]
+        UI[Interactive Web Result]
+    end
+
+    U -->|X-ray upload| UP
+    UP --> RESIZE --> AUG --> CNN
+    CNN --> CONF
+    CNN --> GC --> OVERLAY
+    CONF --> GEMINI
+    OVERLAY --> GEMINI
+    GEMINI --> REPORT
+    REPORT --> PDF
+    REPORT --> UI
+    CONF --> UI
+    OVERLAY --> UI
+    UI --> DASH --> U
+    PDF -.->|download| U
 ```
+
+**Data flow, step by step:**
+
+1. **Upload** - The user submits a chest X-ray through the Flask web interface.
+2. **Preprocess** - The image is resized, normalized, and optionally augmented for consistent model input.
+3. **Classify** - ResNet50 predicts *Pneumonia* or *Normal* with an associated confidence score.
+4. **Explain** - Grad-CAM back-propagates gradients from the final convolutional layer to produce a heatmap, which is overlaid on the original X-ray.
+5. **Reason** - The prediction, confidence score, and heatmap context are passed to Gemini 2.5 Flash, which drafts a structured clinical narrative.
+6. **Deliver** - The dashboard renders the prediction, heatmap, and report inline, while ReportLab packages everything into a downloadable PDF.
 
 ### Component Breakdown
 
