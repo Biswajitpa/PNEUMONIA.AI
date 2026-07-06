@@ -90,6 +90,22 @@ flowchart TD
     OVERLAY --> UI
     UI --> DASH --> U
     PDF -.->|download| U
+
+    classDef client fill:#0f2027,stroke:#0ea5e9,color:#ffffff,stroke-width:2px
+    classDef web fill:#0ea5e9,stroke:#0f2027,color:#ffffff,stroke-width:2px
+    classDef prep fill:#38bdf8,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef ai fill:#22d3ee,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef xai fill:#2dd4bf,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef llm fill:#34d399,stroke:#0f2027,color:#0f2027,stroke-width:2px
+    classDef output fill:#a3e635,stroke:#0f2027,color:#0f2027,stroke-width:2px
+
+    class U client
+    class UP,DASH web
+    class RESIZE,AUG prep
+    class CNN,CONF ai
+    class GC,OVERLAY xai
+    class GEMINI,REPORT llm
+    class PDF,UI output
 ```
 
 **Data flow, step by step:**
